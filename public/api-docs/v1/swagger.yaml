@@ -1,0 +1,257 @@
+openapi: 3.0.1
+info:
+  title: User API
+  version: 1.0.0
+  description: API documentation for user authentication in the Book Store app.
+
+paths:
+  /api/v1/users/signup:
+    post:
+      summary: User Signup
+      description: Creates a new user account.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "John Doe"
+                    email:
+                      type: string
+                      format: email
+                      example: user@example.com
+                    password:
+                      type: string
+                      format: password
+                      example: "Password@123"
+                    mobile_number:
+                      type: string
+                      example: "+919876543210"
+                  required:
+                    - name
+                    - email
+                    - password
+                    - mobile_number
+      responses:
+        "201":
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User created successfully"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 123
+                      name:
+                        type: string
+                        example: "John Doe"
+                      email:
+                        type: string
+                        format: email
+                        example: user@example.com
+                      mobile_number:
+                        type: string
+                        example: "+919876543210"
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Email can't be blank"
+
+  /api/v1/users/login:
+    post:
+      summary: User Login
+      description: Authenticates an existing user and returns a JWT token.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: user@example.com
+                    password:
+                      type: string
+                      format: password
+                      example: "Password@123"
+                  required:
+                    - email
+                    - password
+      responses:
+        "200":
+          description: User successfully logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiSm9obiBEb2UiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20ifQ.signature"
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Email is not registered"
+                example:
+                  errors: "Wrong Password"
+
+  /api/v1/users/forget:
+    post:
+      summary: Forget Password
+      description: Initiates a password reset by sending an OTP to the user's registered email via RabbitMQ.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: user@example.com
+                  required:
+                    - email
+      responses:
+        "200":
+          description: OTP successfully enqueued and sent to email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP has been sent to user@example.com, check your inbox"
+                  otp:
+                    type: integer
+                    example: 123456
+                  user_id:
+                    type: integer
+                    example: 123
+                  otp_generated_at:
+                    type: string
+                    format: date-time
+                    example: "2025-03-06T12:00:00Z"
+        "422":
+          description: Email not found or OTP enqueue failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Email is not registered"
+                example:
+                  errors: "Failed to send OTP, please try again"
+
+  /api/v1/users/reset/{id}:
+    post:
+      summary: Reset Password
+      description: Resets the user's password using a valid OTP received from the forget password endpoint.
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the user whose password is being reset
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    new_password:
+                      type: string
+                      format: password
+                      example: "NewPass@123"
+                    otp:
+                      type: integer
+                      example: 123456
+                  required:
+                    - new_password
+                    - otp
+      responses:
+        "200":
+          description: Password successfully reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password successfully reset"
+        "422":
+          description: Validation error, user not found, or OTP invalid/expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "User not found"
+                examples:
+                  user_not_found:
+                    value:
+                      errors: "User not found"
+                  invalid_otp:
+                    value:
+                      errors: "Invalid or expired OTP"
+                  validation_error:
+                    value:
+                      errors: "Password can't be blank"
