@@ -27,5 +27,7 @@ class BookService
     else
       { success: true, message: "No books available", books: [] }
     end
+  rescue StandardError => e
+    { success: false, error: "Internal server error occurred while retrieving books: #{e.message}" }
   end
 end

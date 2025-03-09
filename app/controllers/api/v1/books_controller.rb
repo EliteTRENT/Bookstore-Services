@@ -23,7 +23,7 @@ class Api::V1::BooksController < ApplicationController
     if result[:success]
       render json: { message: result[:message], books: result[:books] }, status: :ok
     else
-      render json: { errors: result[:error] }, status: :unprocessable_entity
+      render json: { errors: result[:error] }, status: :internal_server_error
     end
   end
 

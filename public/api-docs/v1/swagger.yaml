@@ -384,6 +384,101 @@ paths:
                         value: ["Mrp must be greater than or equal to 0"]
                       invalid_quantity:
                         value: ["Quantity must be an integer"]
+    get:
+      summary: Get All Books
+      description: Retrieves a list of all non-deleted books, ordered by creation date (newest first)
+      tags:
+        - Books
+      responses:
+        "200":
+          description: Books retrieved successfully (returns array even if empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Books retrieved successfully"
+                  books:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: "The Great Gatsby"
+                        author:
+                          type: string
+                          example: "F. Scott Fitzgerald"
+                        mrp:
+                          type: number
+                          format: float
+                          example: 20.99
+                        discounted_price:
+                          type: number
+                          format: float
+                          example: 15.99
+                        quantity:
+                          type: integer
+                          example: 100
+                        book_details:
+                          type: string
+                          nullable: true
+                          example: "A story of the fabulously wealthy Jay Gatsby"
+                        genre:
+                          type: string
+                          nullable: true
+                          example: "Fiction"
+                        book_image:
+                          type: string
+                          nullable: true
+                          example: "http://example.com/book-cover.jpg"
+              examples:
+                with_books:
+                  summary: Successful response with books
+                  value:
+                    message: "Books retrieved successfully"
+                    books:
+                      - id: 1
+                        name: "The Great Gatsby"
+                        author: "F. Scott Fitzgerald"
+                        mrp: 20.99
+                        discounted_price: 15.99
+                        quantity: 100
+                        book_details: "A story of the fabulously wealthy Jay Gatsby"
+                        genre: "Fiction"
+                        book_image: "http://example.com/book-cover.jpg"
+                      - id: 2
+                        name: "1984"
+                        author: "George Orwell"
+                        mrp: 15.99
+                        discounted_price: 12.99
+                        quantity: 50
+                        book_details: "A dystopian novel"
+                        genre: "Science Fiction"
+                        book_image: "http://example.com/1984-cover.jpg"
+                no_books:
+                  summary: Successful response with no books
+                  value:
+                    message: "No books available"
+                    books: []
+        "500":
+          description: Internal Server Error - Database or server failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Internal server error occurred while retrieving books"
+              example:
+                errors: "Internal server error occurred while retrieving books"
+
   /api/v1/books/update/{id}:
     patch:
       summary: Update Book
