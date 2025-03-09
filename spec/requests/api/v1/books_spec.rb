@@ -317,4 +317,115 @@ RSpec.describe BookService, type: :service do
       end
     end
   end
+
+  describe ".get_all_books" do
+    context "when there are active books" do
+      let!(:book1) do
+        Book.create!(
+          name: "Book 1",
+          author: "Author 1",
+          mrp: 20.99,
+          discounted_price: 15.99,
+          quantity: 100,
+          is_deleted: false,
+          created_at: 2.days.ago
+        )
+      end
+      let!(:book2) do
+        Book.create!(
+          name: "Book 2",
+          author: "Author 2",
+          mrp: 25.99,
+          discounted_price: 19.99,
+          quantity: 50,
+          is_deleted: false,
+          created_at: 1.day.ago
+        )
+      end
+
+      it "returns all active books in descending order" do
+        result = BookService.get_all_books
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Books retrieved successfully")
+        expect(result[:books].length).to eq(2)
+        expect(result[:books].first.id).to eq(book2.id) # Newer book first
+        expect(result[:books].last.id).to eq(book1.id)
+      end
+    end
+
+    context "when there are no books" do
+      it "returns an empty array with appropriate message" do
+        result = BookService.get_all_books
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("No books available")
+        expect(result[:books]).to eq([])
+      end
+    end
+
+    context "when there are only deleted books" do
+      let!(:deleted_book) do
+        Book.create!(
+          name: "Deleted Book",
+          author: "Author",
+          mrp: 20.99,
+          discounted_price: 15.99,
+          quantity: 100,
+          is_deleted: true
+        )
+      end
+
+      it "returns an empty array excluding deleted books" do
+        result = BookService.get_all_books
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("No books available")
+        expect(result[:books]).to eq([])
+        expect(result[:books]).not_to include(deleted_book)
+      end
+    end
+
+    context "when there are both active and deleted books" do
+      let!(:active_book) do
+        Book.create!(
+          name: "Active Book",
+          author: "Author 1",
+          mrp: 20.99,
+          discounted_price: 15.99,
+          quantity: 100,
+          is_deleted: false
+        )
+      end
+      let!(:deleted_book) do
+        Book.create!(
+          name: "Deleted Book",
+          author: "Author 2",
+          mrp: 25.99,
+          discounted_price: 19.99,
+          quantity: 50,
+          is_deleted: true
+        )
+      end
+
+      it "returns only active books" do
+        result = BookService.get_all_books
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Books retrieved successfully")
+        expect(result[:books].length).to eq(1)
+        expect(result[:books]).to include(active_book)
+        expect(result[:books]).not_to include(deleted_book)
+      end
+    end
+
+    context "when a database error occurs" do
+      before do
+        allow(Book).to receive(:where).and_raise(StandardError.new("Database connection failed"))
+      end
+
+      it "returns an error response" do
+        result = BookService.get_all_books
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Internal server error occurred while retrieving books: Database connection failed")
+        expect(result[:books]).to be_nil
+      end
+    end
+  end
 end
