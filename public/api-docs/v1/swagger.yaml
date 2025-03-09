@@ -607,3 +607,76 @@ paths:
                         value: ["Book not found or has been deleted"]
                       validation_errors:
                         value: ["Name can't be blank", "Mrp must be greater than or equal to 0"]
+
+  /api/v1/books/show/{id}:
+    get:
+      summary: Get Book by ID
+      description: Retrieves a specific book by its ID, if it exists and is not deleted
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to retrieve
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book retrieved successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "404":
+          description: Book not found or has been deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found or has been deleted"
+              example:
+                errors: "Book not found or has been deleted"
