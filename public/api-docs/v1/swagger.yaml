@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: User API
   version: 1.0.0
-  description: API documentation for user authentication in the Book Store app.
+  description: API documentation for user authentication and wishlist management in the Book Store app.
 
 paths:
   /api/v1/users/signup:
@@ -263,7 +263,7 @@ paths:
       tags:
         - Wishlists
       security:
-        - BearerAuth: []  
+        - BearerAuth: []
       parameters:
         - in: header
           name: Authorization
@@ -317,72 +317,128 @@ paths:
                     example: "Unauthorized"
 
   /api/v1/wishlists/getAll:
-   get:
-     summary: Get All Wishlist Items
-     description: Retrieves all books in the authenticated user's wishlist.
-     tags:
-       - Wishlists
-     security:
-       - BearerAuth: []  
-     parameters:
-       - in: header
-         name: Authorization
-         required: true
-         description: Bearer token for authentication
-         schema:
-           type: string
-           example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-     responses:
-       "200":
-         description: Wishlist retrieved successfully
-         content:
-           application/json:
-             schema:
-               type: object
-               properties:
-                 wishlist:
-                   type: array
-                   items:
-                     type: object
-                     properties:
-                       id:
-                         type: integer
-                         example: 1
-                       book_id:
-                         type: integer
-                         example: 456
-                       book_name:
-                         type: string
-                         example: "The Great Gatsby"
-                       author:
-                         type: string
-                         example: "F. Scott Fitzgerald"
-                       genre:
-                         type: string
-                         example: "Fiction"
-                       book_image:
-                         type: string
-                         example: "great_gatsby.jpg"
-       "401":
-         description: Unauthorized - Token missing or invalid
-         content:
-           application/json:
-             schema:
-               type: object
-               properties:
-                 error:
-                   type: string
-                   example: "Unauthorized"
-       "404":
-         description: User not found or no wishlist items
-         content:
-           application/json:
-             schema:
-               type: object
-               properties:
-                 error:
-                   type: string
-                   example: "Wishlist is EMPTY"
+    get:
+      summary: Get All Wishlist Items
+      description: Retrieves all books in the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Wishlist retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wishlist:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        book_id:
+                          type: integer
+                          example: 456
+                        book_name:
+                          type: string
+                          example: "The Great Gatsby"
+                        author:
+                          type: string
+                          example: "F. Scott Fitzgerald"
+                        genre:
+                          type: string
+                          example: "Fiction"
+                        book_image:
+                          type: string
+                          example: "great_gatsby.jpg"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: User not found or no wishlist items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Wishlist is EMPTY"
+
+
+  /api/v1/wishlists/destroy/{book_id}:
+    delete:
+      summary: Remove Book from Wishlist
+      description: Removes a specific book from the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: book_id
+          required: true
+          description: The ID of the book to be removed from the wishlist
+          schema:
+            type: integer
+            example: 456
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Book successfully removed from wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book removed from wishlist!"
+        "400":
+          description: Invalid request or book not in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found in wishlist"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
 
 components:
   securitySchemes:

@@ -19,11 +19,25 @@ class WishlistService
     return { success: false, error: "Invalid token" } unless token_email
     user = User.find_by(email: token_email)
     return { success: false, error: "User not found" } unless user
-    wishlists = user.wishlists
+    wishlists = user.wishlists.where(is_deleted: false)
     if wishlists
       { success: true, wishlists: wishlists }
     else
       { success: false, error: "Wishlist is EMPTY" }
+    end
+  end
+
+  def self.destroy(token, book_id)
+    token_email = JsonWebToken.decode(token)
+    return { success: false, error: "Invalid token" } unless token_email
+    user = User.find_by(email: token_email)
+    return { success: false, error: "User not found" } unless user
+    wishlist_item = user.wishlists.find_by(book_id: book_id, is_deleted: false)
+    if wishlist_item
+      wishlist_item.update(is_deleted: true)
+      { success: true, message: "Book removed from wishlist!" }
+    else
+      { success: false, error: "Book not found in wishlist" }
     end
   end
 end

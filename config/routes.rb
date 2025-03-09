@@ -10,6 +10,7 @@ Rails.application.routes.draw do
 
       post "wishlists/add" => "wishlists#addBook"
       get "wishlists/getAll" => "wishlists#getAll"
+      delete "wishlists/destroy/:book_id" => "wishlists#destroy"
     end
   end
 end

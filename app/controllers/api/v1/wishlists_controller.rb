@@ -29,6 +29,20 @@ class Api::V1::WishlistsController < ApplicationController
     end
   end
 
+  def destroy
+    token = request.headers["Authorization"]&.split(" ")&.last
+    result = WishlistService.destroy(token, params[:book_id])
+    if result[:success]
+      render json: { message: result[:message] }, status: :ok
+    elsif result[:error] == "Invalid token"
+      render json: { error: result[:error] }, status: :unauthorized
+    elsif result[:error] == "User not found"
+      render json: { error: result[:error] }, status: :not_found
+    else
+      render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
   private
 
   def wishlist_params
