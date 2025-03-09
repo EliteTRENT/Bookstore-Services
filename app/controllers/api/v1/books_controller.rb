@@ -27,6 +27,15 @@ class Api::V1::BooksController < ApplicationController
     end
   end
 
+  def show
+    result = BookService.get_book_by_id(params[:id])
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
   private
 
   def book_params

@@ -30,4 +30,13 @@ class BookService
   rescue StandardError => e
     { success: false, error: "Internal server error occurred while retrieving books: #{e.message}" }
   end
+
+  def self.get_book_by_id(book_id)
+    book = Book.find_by(id: book_id, is_deleted: false)
+    if book
+      { success: true, message: "Book retrieved successfully", book: book }
+    else
+      { success: false, error: "Book not found or has been deleted" }
+    end
+  end
 end
