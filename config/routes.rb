@@ -10,6 +10,7 @@ Rails.application.routes.draw do
 
       post "books/create" => "books#create"
       patch "books/update/:id" => "books#update"
+      get "books" => "books#index"
     end
   end
 end

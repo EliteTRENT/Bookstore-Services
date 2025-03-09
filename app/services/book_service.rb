@@ -19,4 +19,13 @@ class BookService
       { success: false, error: book.errors.full_messages }
     end
   end
+
+  def self.get_all_books
+    books = Book.where(is_deleted: false).order(created_at: :desc)
+    if books.any?
+      { success: true, message: "Books retrieved successfully", books: books }
+    else
+      { success: true, message: "No books available", books: [] }
+    end
+  end
 end

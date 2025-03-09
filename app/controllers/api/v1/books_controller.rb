@@ -18,6 +18,15 @@ class Api::V1::BooksController < ApplicationController
     end
   end
 
+  def index
+    result = BookService.get_all_books
+    if result[:success]
+      render json: { message: result[:message], books: result[:books] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def book_params
