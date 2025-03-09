@@ -212,4 +212,109 @@ RSpec.describe BookService, type: :service do
       end
     end
   end
+
+  describe ".update_book" do
+    let(:valid_attributes) do
+      {
+        name: "The Great Gatsby",
+        author: "F. Scott Fitzgerald",
+        mrp: 20.99,
+        discounted_price: 15.99,
+        quantity: 100,
+        book_details: "A story of the fabulously wealthy Jay Gatsby",
+        genre: "Fiction",
+        book_image: "http://example.com/book-cover.jpg"
+      }
+    end
+
+    context "with existing book" do
+      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
+
+      context "with valid updates" do
+        it "updates all attributes successfully" do
+          update_attributes = {
+            name: "Updated Title",
+            author: "Updated Author",
+            mrp: 25.99,
+            discounted_price: 19.99,
+            quantity: 50,
+            book_details: "Updated details",
+            genre: "Non-Fiction",
+            book_image: "http://example.com/new-cover.jpg"
+          }
+          result = BookService.update_book(book.id, update_attributes)
+          expect(result[:success]).to be_truthy
+          expect(result[:message]).to eq("Book updated successfully")
+          expect(result[:book].name).to eq("Updated Title")
+          expect(result[:book].author).to eq("Updated Author")
+          expect(result[:book].mrp).to eq(25.99)
+          expect(result[:book].discounted_price).to eq(19.99)
+          expect(result[:book].quantity).to eq(50)
+          expect(result[:book].book_details).to eq("Updated details")
+          expect(result[:book].genre).to eq("Non-Fiction")
+          expect(result[:book].book_image).to eq("http://example.com/new-cover.jpg")
+        end
+
+        it "updates partial attributes successfully" do
+          update_attributes = { name: "New Title", quantity: 75 }
+          result = BookService.update_book(book.id, update_attributes)
+          expect(result[:success]).to be_truthy
+          expect(result[:book].name).to eq("New Title")
+          expect(result[:book].quantity).to eq(75)
+          expect(result[:book].author).to eq("F. Scott Fitzgerald") # unchanged
+          expect(result[:book].mrp).to eq(20.99) # unchanged
+        end
+      end
+
+      context "with invalid updates" do
+        it "fails when name is blank" do
+          result = BookService.update_book(book.id, { name: "" })
+          expect(result[:success]).to be_falsey
+          expect(result[:error]).to include("Name can't be blank")
+        end
+
+        it "fails when mrp is negative" do
+          result = BookService.update_book(book.id, { mrp: -1 })
+          expect(result[:success]).to be_falsey
+          expect(result[:error]).to include("Mrp must be greater than or equal to 0")
+        end
+
+        it "fails when discounted_price is negative" do
+          result = BookService.update_book(book.id, { discounted_price: -1 })
+          expect(result[:success]).to be_falsey
+          expect(result[:error]).to include("Discounted price must be greater than or equal to 0")
+        end
+
+        it "fails when quantity is negative" do
+          result = BookService.update_book(book.id, { quantity: -1 })
+          expect(result[:success]).to be_falsey
+          expect(result[:error]).to include("Quantity must be greater than or equal to 0")
+        end
+
+        it "fails when quantity is not an integer" do
+          result = BookService.update_book(book.id, { quantity: 5.5 })
+          expect(result[:success]).to be_falsey
+          expect(result[:error]).to include("Quantity must be an integer")
+        end
+      end
+    end
+
+    context "with non-existent book" do
+      it "returns error when book doesn't exist" do
+        result = BookService.update_book(999, { name: "New Title" })
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Book not found or has been deleted")
+      end
+    end
+
+    context "with deleted book" do
+      let!(:deleted_book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
+
+      it "returns error when book is deleted" do
+        result = BookService.update_book(deleted_book.id, { name: "New Title" })
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Book not found or has been deleted")
+      end
+    end
+  end
 end
