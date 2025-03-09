@@ -8,9 +8,17 @@ Rails.application.routes.draw do
       post "users/forget" => "users#forgetPassword"
       post "users/reset/:id" => "users#resetPassword"
 
+
       post "wishlists/add" => "wishlists#addBook"
       get "wishlists/getAll" => "wishlists#getAll"
       delete "wishlists/destroy/:book_id" => "wishlists#destroy"
+
+      post "books/create" => "books#create"
+      patch "books/update/:id" => "books#update"
+      get "books" => "books#index"
+      get "books/show/:id" => "books#show"
+      patch "books/toggle_delete/:id" => "books#toggle_delete"
+      delete "books/:id" => "books#destroy"
     end
   end
 end

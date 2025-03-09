@@ -1,0 +1,62 @@
+class Api::V1::BooksController < ApplicationController
+  skip_before_action :verify_authenticity_token
+  def create
+    result = BookService.create_book(book_params)
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :created
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    result = BookService.update_book(params[:id], book_params)
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
+  def index
+    result = BookService.get_all_books
+    if result[:success]
+      render json: { message: result[:message], books: result[:books] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :internal_server_error
+    end
+  end
+
+  def show
+    result = BookService.get_book_by_id(params[:id])
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
+  def toggle_delete
+    result = BookService.toggle_delete(params[:id])
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    result = BookService.hard_delete(params[:id])
+    if result[:success]
+      render json: { message: result[:message] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
+  private
+
+  def book_params
+    params.require(:book).permit(:name, :author, :mrp, :discounted_price, :quantity, :book_details, :genre, :book_image)
+  end
+end

@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
-  title: User API
+  title: Book Store App
   version: 1.0.0
-  description: API documentation for user authentication and wishlist management in the Book Store app.
+  description: API documentation for the Book Store app.
 
 paths:
   /api/v1/users/signup:
@@ -256,22 +256,12 @@ paths:
                     value:
                       errors: "Password can't be blank"
 
-  /api/v1/wishlists/add:
+  /api/v1/books:
     post:
-      summary: Add Book to Wishlist
-      description: Adds a book to the user's wishlist. The `user_id` is extracted from the authentication token.
+      summary: Create Book
+      description: Creates a new book with the provided details
       tags:
-        - Wishlists
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - Books
       requestBody:
         required: true
         content:
@@ -279,14 +269,60 @@ paths:
             schema:
               type: object
               properties:
-                book_id:
-                  type: integer
-                  example: 456
-              required:
-                - book_id
+                book:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "The Great Gatsby"
+                      minLength: 1
+                      description: "Book title (required)"
+                    author:
+                      type: string
+                      example: "F. Scott Fitzgerald"
+                      minLength: 1
+                      description: "Author name (required)"
+                    mrp:
+                      type: number
+                      format: float
+                      minimum: 0
+                      example: 20.99
+                      description: "Maximum retail price (must be >= 0)"
+                    discounted_price:
+                      type: number
+                      format: float
+                      minimum: 0
+                      example: 15.99
+                      description: "Discounted price (must be >= 0)"
+                    quantity:
+                      type: integer
+                      minimum: 0
+                      example: 100
+                      description: "Stock quantity (must be integer >= 0)"
+                    book_details:
+                      type: string
+                      nullable: true
+                      example: "A story of the fabulously wealthy Jay Gatsby"
+                      description: "Additional book details (optional)"
+                    genre:
+                      type: string
+                      nullable: true
+                      example: "Fiction"
+                      description: "Book genre (optional)"
+                    book_image:
+                      type: string
+                      nullable: true
+                      example: "http://example.com/book-cover.jpg"
+                      description: "URL to book cover image (optional)"
+                  required:
+                    - name
+                    - author
+                    - mrp
+                    - discounted_price
+                    - quantity
       responses:
         "201":
-          description: Book successfully added to wishlist
+          description: Book successfully created
           content:
             application/json:
               schema:
@@ -297,6 +333,44 @@ paths:
                     example: "Book added to wishlist!"
         "400":
           description: Invalid request or book already in wishlist
+                    example: "Book created successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "422":
+          description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
@@ -335,12 +409,34 @@ paths:
       responses:
         "200":
           description: Wishlist retrieved successfully
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      missing_fields:
+                        value: ["Name can't be blank", "Author can't be blank"]
+                      invalid_numbers:
+                        value: ["Mrp must be greater than or equal to 0"]
+                      invalid_quantity:
+                        value: ["Quantity must be an integer"]
+    get:
+      summary: Get All Books
+      description: Retrieves a list of all non-deleted books, ordered by creation date (newest first)
+      tags:
+        - Books
+      responses:
+        "200":
+          description: Books retrieved successfully (returns array even if empty)
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   wishlist:
+                  message:
+                    type: string
+                    example: "Books retrieved successfully"
+                  books:
                     type: array
                     items:
                       type: object
@@ -352,65 +448,146 @@ paths:
                           type: integer
                           example: 456
                         book_name:
+                        name:
                           type: string
                           example: "The Great Gatsby"
                         author:
                           type: string
                           example: "F. Scott Fitzgerald"
+                        mrp:
+                          type: number
+                          format: float
+                          example: 20.99
+                        discounted_price:
+                          type: number
+                          format: float
+                          example: 15.99
+                        quantity:
+                          type: integer
+                          example: 100
+                        book_details:
+                          type: string
+                          nullable: true
+                          example: "A story of the fabulously wealthy Jay Gatsby"
                         genre:
                           type: string
+                          nullable: true
                           example: "Fiction"
                         book_image:
                           type: string
-                          example: "great_gatsby.jpg"
-        "401":
-          description: Unauthorized - Token missing or invalid
+                          nullable: true
+                          example: "http://example.com/book-cover.jpg"
+              examples:
+                with_books:
+                  summary: Successful response with books
+                  value:
+                    message: "Books retrieved successfully"
+                    books:
+                      - id: 1
+                        name: "The Great Gatsby"
+                        author: "F. Scott Fitzgerald"
+                        mrp: 20.99
+                        discounted_price: 15.99
+                        quantity: 100
+                        book_details: "A story of the fabulously wealthy Jay Gatsby"
+                        genre: "Fiction"
+                        book_image: "http://example.com/book-cover.jpg"
+                      - id: 2
+                        name: "1984"
+                        author: "George Orwell"
+                        mrp: 15.99
+                        discounted_price: 12.99
+                        quantity: 50
+                        book_details: "A dystopian novel"
+                        genre: "Science Fiction"
+                        book_image: "http://example.com/1984-cover.jpg"
+                no_books:
+                  summary: Successful response with no books
+                  value:
+                    message: "No books available"
+                    books: []
+        "500":
+          description: Internal Server Error - Database or server failure
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error:
+                  errors:
                     type: string
-                    example: "Unauthorized"
-        "404":
-          description: User not found or no wishlist items
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Wishlist is EMPTY"
+                    example: "Internal server error occurred while retrieving books"
+              example:
+                errors: "Internal server error occurred while retrieving books"
 
-
-  /api/v1/wishlists/destroy/{book_id}:
-    delete:
-      summary: Remove Book from Wishlist
-      description: Removes a specific book from the authenticated user's wishlist.
+  /api/v1/books/update/{id}:
+    patch:
+      summary: Update Book
+      description: Updates an existing book with the provided details
       tags:
-        - Wishlists
-      security:
-        - BearerAuth: []
+        - Books
       parameters:
-        - in: path
-          name: book_id
+        - name: id
+          in: path
           required: true
-          description: The ID of the book to be removed from the wishlist
+          description: The ID of the book to update
           schema:
             type: integer
-            example: 456
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                book:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "The Great Gatsby"
+                      minLength: 1
+                      description: "Book title"
+                    author:
+                      type: string
+                      example: "F. Scott Fitzgerald"
+                      minLength: 1
+                      description: "Author name"
+                    mrp:
+                      type: number
+                      format: float
+                      minimum: 0
+                      example: 20.99
+                      description: "Maximum retail price (must be >= 0)"
+                    discounted_price:
+                      type: number
+                      format: float
+                      minimum: 0
+                      example: 15.99
+                      description: "Discounted price (must be >= 0)"
+                    quantity:
+                      type: integer
+                      minimum: 0
+                      example: 100
+                      description: "Stock quantity (must be integer >= 0)"
+                    book_details:
+                      type: string
+                      nullable: true
+                      example: "A story of the fabulously wealthy Jay Gatsby"
+                      description: "Additional book details (optional)"
+                    genre:
+                      type: string
+                      nullable: true
+                      example: "Fiction"
+                      description: "Book genre (optional)"
+                    book_image:
+                      type: string
+                      nullable: true
+                      example: "http://example.com/book-cover.jpg"
+                      description: "URL to book cover image (optional)"
       responses:
         "200":
-          description: Book successfully removed from wishlist
+          description: Book successfully updated
           content:
             application/json:
               schema:
@@ -418,31 +595,285 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Book removed from wishlist!"
-        "400":
-          description: Invalid request or book not in wishlist
+                    example: "Book updated successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "422":
+          description: Validation error or book not found
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   errors:
-                    type: string
-                    example: "Book not found in wishlist"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      not_found:
+                        value: ["Book not found or has been deleted"]
+                      validation_errors:
+                        value: ["Name can't be blank", "Mrp must be greater than or equal to 0"]
 
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+  /api/v1/books/show/{id}:
+    get:
+      summary: Get Book by ID
+      description: Retrieves a specific book by its ID, if it exists and is not deleted
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to retrieve
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book retrieved successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "404":
+          description: Book not found or has been deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found or has been deleted"
+              example:
+                errors: "Book not found or has been deleted"
+
+  /api/v1/books/toggle_delete/{id}:
+    patch:
+      summary: Toggle Delete Status of a Book
+      description: Toggles the delete status of a book (marks as deleted or restores it) by its ID
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to toggle delete status
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book delete status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book marked as deleted"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+                      is_deleted:
+                        type: boolean
+                        example: true
+              examples:
+                marked_as_deleted:
+                  summary: Book marked as deleted
+                  value:
+                    message: "Book marked as deleted"
+                    book:
+                      id: 1
+                      name: "The Great Gatsby"
+                      author: "F. Scott Fitzgerald"
+                      mrp: 20.99
+                      discounted_price: 15.99
+                      quantity: 100
+                      book_details: "A story of the fabulously wealthy Jay Gatsby"
+                      genre: "Fiction"
+                      book_image: "http://example.com/book-cover.jpg"
+                      is_deleted: true
+                restored:
+                  summary: Book restored
+                  value:
+                    message: "Book restored"
+                    book:
+                      id: 1
+                      name: "The Great Gatsby"
+                      author: "F. Scott Fitzgerald"
+                      mrp: 20.99
+                      discounted_price: 15.99
+                      quantity: 100
+                      book_details: "A story of the fabulously wealthy Jay Gatsby"
+                      genre: "Fiction"
+                      book_image: "http://example.com/book-cover.jpg"
+                      is_deleted: false
+        "422":
+          description: Book not found or update failed due to validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    oneOf:
+                      - type: string
+                      - type: array
+                        items:
+                          type: string
+              examples:
+                not_found:
+                  summary: Book not found
+                  value:
+                    errors: "Book not found"
+                validation_error:
+                  summary: Validation error
+                  value:
+                    errors: ["Some validation error"]
+
+  /api/v1/books/{id}:
+    delete:
+      summary: Hard Delete a Book
+      description: Permanently deletes a book by its ID from the database
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to delete
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book permanently deleted"
+              example:
+                message: "Book permanently deleted"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found"
+              example:
+                errors: "Book not found"
