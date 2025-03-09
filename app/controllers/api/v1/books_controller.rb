@@ -36,6 +36,15 @@ class Api::V1::BooksController < ApplicationController
     end
   end
 
+  def toggle_delete
+    result = BookService.toggle_delete(params[:id])
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def book_params

@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       patch "books/update/:id" => "books#update"
       get "books" => "books#index"
       get "books/show/:id" => "books#show"
+      patch "books/toggle_delete/:id" => "books#toggle_delete"
     end
   end
 end

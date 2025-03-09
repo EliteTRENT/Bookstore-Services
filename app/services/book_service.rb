@@ -39,4 +39,18 @@ class BookService
       { success: false, error: "Book not found or has been deleted" }
     end
   end
+
+  def self.toggle_delete(book_id)
+    book = Book.find_by(id: book_id)
+    if !book
+      return { success: false, error: "Book not found" }
+    end
+    new_status = !book.is_deleted
+    if book.update(is_deleted: new_status)
+      message = new_status ? "Book marked as deleted" : "Book restored"
+      { success: true, message: message, book: book }
+    else
+      { success: false, error: book.errors.full_messages }
+    end
+  end
 end
