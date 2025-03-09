@@ -541,4 +541,29 @@ RSpec.describe BookService, type: :service do
       end
     end
   end
+
+  describe ".hard_delete" do
+    let(:valid_attributes) do
+      { name: "The Great Gatsby", author: "F. Scott Fitzgerald", mrp: 20.99, discounted_price: 15.99, quantity: 100 }
+    end
+
+    context "when the book exists" do
+      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
+
+      it "permanently deletes the book" do
+        result = BookService.hard_delete(book.id)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Book permanently deleted")
+        expect(Book.exists?(book.id)).to be_falsey
+      end
+    end
+
+    context "when the book does not exist" do
+      it "returns an error" do
+        result = BookService.hard_delete(999)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Book not found")
+      end
+    end
+  end
 end
