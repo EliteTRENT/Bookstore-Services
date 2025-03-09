@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       post "users/reset/:id" => "users#resetPassword"
 
       post "books/create" => "books#create"
+      patch "books/update/:id" => "books#update"
     end
   end
 end

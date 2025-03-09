@@ -9,6 +9,15 @@ class Api::V1::BooksController < ApplicationController
     end
   end
 
+  def update
+    result = BookService.update_book(params[:id], book_params)
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def book_params
