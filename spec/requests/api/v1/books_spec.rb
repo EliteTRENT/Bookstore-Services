@@ -428,4 +428,58 @@ RSpec.describe BookService, type: :service do
       end
     end
   end
+
+  describe ".get_book_by_id" do
+    let(:valid_attributes) do
+      {
+        name: "The Great Gatsby",
+        author: "F. Scott Fitzgerald",
+        mrp: 20.99,
+        discounted_price: 15.99,
+        quantity: 100,
+        book_details: "A story of the fabulously wealthy Jay Gatsby",
+        genre: "Fiction",
+        book_image: "http://example.com/book-cover.jpg"
+      }
+    end
+
+    context "when the book exists and is not deleted" do
+      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
+
+      it "returns the book successfully" do
+        result = BookService.get_book_by_id(book.id)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Book retrieved successfully")
+        expect(result[:book]).to eq(book)
+        expect(result[:book].name).to eq("The Great Gatsby")
+        expect(result[:book].author).to eq("F. Scott Fitzgerald")
+        expect(result[:book].mrp).to eq(20.99)
+        expect(result[:book].discounted_price).to eq(15.99)
+        expect(result[:book].quantity).to eq(100)
+        expect(result[:book].book_details).to eq("A story of the fabulously wealthy Jay Gatsby")
+        expect(result[:book].genre).to eq("Fiction")
+        expect(result[:book].book_image).to eq("http://example.com/book-cover.jpg")
+      end
+    end
+
+    context "when the book does not exist" do
+      it "returns an error" do
+        result = BookService.get_book_by_id(999)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Book not found or has been deleted")
+        expect(result[:book]).to be_nil
+      end
+    end
+
+    context "when the book exists but is deleted" do
+      let!(:deleted_book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
+
+      it "returns an error" do
+        result = BookService.get_book_by_id(deleted_book.id)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Book not found or has been deleted")
+        expect(result[:book]).to be_nil
+      end
+    end
+  end
 end
