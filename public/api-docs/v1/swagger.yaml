@@ -680,3 +680,120 @@ paths:
                     example: "Book not found or has been deleted"
               example:
                 errors: "Book not found or has been deleted"
+
+  /api/v1/books/toggle_delete/{id}:
+    patch:
+      summary: Toggle Delete Status of a Book
+      description: Toggles the delete status of a book (marks as deleted or restores it) by its ID
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to toggle delete status
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book delete status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book marked as deleted"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+                      is_deleted:
+                        type: boolean
+                        example: true
+              examples:
+                marked_as_deleted:
+                  summary: Book marked as deleted
+                  value:
+                    message: "Book marked as deleted"
+                    book:
+                      id: 1
+                      name: "The Great Gatsby"
+                      author: "F. Scott Fitzgerald"
+                      mrp: 20.99
+                      discounted_price: 15.99
+                      quantity: 100
+                      book_details: "A story of the fabulously wealthy Jay Gatsby"
+                      genre: "Fiction"
+                      book_image: "http://example.com/book-cover.jpg"
+                      is_deleted: true
+                restored:
+                  summary: Book restored
+                  value:
+                    message: "Book restored"
+                    book:
+                      id: 1
+                      name: "The Great Gatsby"
+                      author: "F. Scott Fitzgerald"
+                      mrp: 20.99
+                      discounted_price: 15.99
+                      quantity: 100
+                      book_details: "A story of the fabulously wealthy Jay Gatsby"
+                      genre: "Fiction"
+                      book_image: "http://example.com/book-cover.jpg"
+                      is_deleted: false
+        "422":
+          description: Book not found or update failed due to validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    oneOf:
+                      - type: string
+                      - type: array
+                        items:
+                          type: string
+              examples:
+                not_found:
+                  summary: Book not found
+                  value:
+                    errors: "Book not found"
+                validation_error:
+                  summary: Validation error
+                  value:
+                    errors: ["Some validation error"]
