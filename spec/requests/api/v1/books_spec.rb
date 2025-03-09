@@ -482,4 +482,63 @@ RSpec.describe BookService, type: :service do
       end
     end
   end
+
+  describe ".toggle_delete" do
+    let(:valid_attributes) do
+      {
+        name: "The Great Gatsby",
+        author: "F. Scott Fitzgerald",
+        mrp: 20.99,
+        discounted_price: 15.99,
+        quantity: 100
+      }
+    end
+
+    context "when the book exists and is not deleted" do
+      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
+
+      it "marks the book as deleted" do
+        result = BookService.toggle_delete(book.id)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Book marked as deleted")
+        expect(result[:book].is_deleted).to be_truthy
+      end
+    end
+
+    context "when the book exists and is deleted" do
+      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
+
+      it "restores the book" do
+        result = BookService.toggle_delete(book.id)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Book restored")
+        expect(result[:book].is_deleted).to be_falsey
+      end
+    end
+
+    context "when the book does not exist" do
+      it "returns an error" do
+        result = BookService.toggle_delete(999)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Book not found")
+        expect(result[:book]).to be_nil
+      end
+    end
+
+    context "when the update fails due to validation" do
+      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
+
+      before do
+        allow_any_instance_of(Book).to receive(:update).and_return(false)
+        allow_any_instance_of(Book).to receive(:errors).and_return(double(full_messages: [ "Validation failed" ]))
+      end
+
+      it "returns an error" do
+        result = BookService.toggle_delete(book.id)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq([ "Validation failed" ])
+        expect(result[:book]).to be_nil
+      end
+    end
+  end
 end
