@@ -7,28 +7,8 @@ Rails.application.routes.draw do
       post "users/login" => "users#login"
       post "users/forget" => "users#forgetPassword"
       post "users/reset/:id" => "users#resetPassword"
+
+      post "books/create" => "books#create"
     end
   end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
