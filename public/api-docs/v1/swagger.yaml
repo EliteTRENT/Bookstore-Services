@@ -797,3 +797,43 @@ paths:
                   summary: Validation error
                   value:
                     errors: ["Some validation error"]
+
+  /api/v1/books/{id}:
+    delete:
+      summary: Hard Delete a Book
+      description: Permanently deletes a book by its ID from the database
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to delete
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book permanently deleted"
+              example:
+                message: "Book permanently deleted"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found"
+              example:
+                errors: "Book not found"
