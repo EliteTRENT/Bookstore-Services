@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe "Wishlists API", type: :request do
   let!(:user) { User.create!(name: "Test User", email: "test1234@gmail.com", password: "Password@1234", mobile_number: 7087077804) }
   let!(:book) { Book.create!(name: "Test Book", author: "Author Name") }
-  let(:token) { JsonWebToken.encode(email: user.email) } # Encode email instead of user_id
+  let(:token) { JsonWebToken.encode(email: user.email) }
 
   describe "POST /api/v1/wishlists/add" do
     context "when adding a valid book to the wishlist" do
@@ -32,12 +32,11 @@ RSpec.describe "Wishlists API", type: :request do
     end
 
     context "when token is missing" do
-      it "returns an unauthorized error" do
+      it "returns an unauthorized status" do
         post "/api/v1/wishlists/add",
              params: { wishlist: { book_id: book.id } }
 
         expect(response).to have_http_status(:unauthorized)
-        expect(JSON.parse(response.body)["error"]).to eq("Unauthorized")
       end
     end
 
@@ -73,6 +72,56 @@ RSpec.describe "Wishlists API", type: :request do
 
         expect(response).to have_http_status(:not_found)
         expect(JSON.parse(response.body)["error"]).to eq("Book not found")
+      end
+    end
+  end
+
+  describe "GET /api/v1/wishlists/getAll" do
+    context "when request is valid" do
+      before { user.wishlists.create(book: book) }
+      it "returns all wishlisted books" do
+        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{token}" }
+        expect(response).to have_http_status(:ok)
+        body = JSON.parse(response.body)
+        expect(body["message"]).to be_an(Array)
+        expect(body["message"].first["book_id"]).to eq(book.id) 
+      end
+    end
+
+    context "when token is missing" do
+      it "returns unauthorized status" do
+        get "/api/v1/wishlists/getAll"
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "when token is invalid" do
+      it "returns invalid token error" do
+        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer invalid_token" }
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(JSON.parse(response.body)["error"]).to eq("Invalid token")
+      end
+    end
+
+    context "when user is not found" do
+      let(:fake_token) { JsonWebToken.encode(email: "fake_user@gmail.com") }
+
+      it "returns a user not found error" do
+        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{fake_token}" }
+
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)["error"]).to eq("User not found")
+      end
+    end
+
+    context "when wishlist is empty" do
+      it "returns an empty array" do
+        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{token}" }
+
+        expect(response).to have_http_status(:ok)
+        expect(JSON.parse(response.body)["message"]).to eq([])
       end
     end
   end

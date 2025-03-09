@@ -8,7 +8,7 @@ class JsonWebToken
       decoded_token = JWT.decode(token, ENV["SECRET_KEY"], true, algorithm: "HS256")
       decoded_token[0]["email"]
     rescue JWT::DecodeError
-      nil 
+      nil
     end
   end
 end

@@ -3,23 +3,32 @@ class Api::V1::WishlistsController < ApplicationController
 
   def addBook
     token = request.headers["Authorization"]&.split(" ")&.last
-    if token
-      token_email = JsonWebToken.decode(token)
-      return render json: { error: "Invalid token" }, status: :unauthorized unless token_email
-      user = User.find_by(email: token_email)
-      return render json: { error: "User not found" }, status: :not_found unless user
-      book = Book.find_by(id: wishlist_params[:book_id])
-      return render json: { error: "Book not found" }, status: :not_found unless book
-      result = WishlistService.addBook(user, book)
-      if result[:success]
-        render json: { message: result[:message] }, status: :created
-      else
-        render json: { errors: result[:error] }, status: :unprocessable_entity
-      end
+    result = WishlistService.addBook(token, wishlist_params)
+    if result[:success]
+      render json: { message: result[:message] }, status: :created
+    elsif result[:error] == "Invalid token"
+      render json: { error: result[:error] }, status: :unauthorized
+    elsif result[:error] == "User not found" || result[:error] == "Book not found"
+      render json: { error: result[:error] }, status: :not_found
     else
-      render json: { error: "Unauthorized" }, status: :unauthorized
+      render json: { errors: result[:error] }, status: :unprocessable_entity
     end
   end
+
+  def getAll
+    token = request.headers["Authorization"]&.split(" ")&.last
+    result = WishlistService.getAll(token)
+    if result[:success]
+      render json: { message: result[:wishlists] }, status: :ok
+    elsif result[:error] == "Invalid token"
+      render json: { error: result[:error] }, status: :unauthorized
+    elsif result[:error] == "User not found"
+      render json: { error: result[:error] }, status: :not_found
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def wishlist_params

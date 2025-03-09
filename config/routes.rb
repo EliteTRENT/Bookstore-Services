@@ -9,28 +9,7 @@ Rails.application.routes.draw do
       post "users/reset/:id" => "users#resetPassword"
 
       post "wishlists/add" => "wishlists#addBook"
+      get "wishlists/getAll" => "wishlists#getAll"
     end
   end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
