@@ -45,6 +45,15 @@ class Api::V1::BooksController < ApplicationController
     end
   end
 
+  def destroy
+    result = BookService.hard_delete(params[:id])
+    if result[:success]
+      render json: { message: result[:message] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
   private
 
   def book_params
