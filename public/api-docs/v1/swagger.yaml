@@ -255,3 +255,70 @@ paths:
                   validation_error:
                     value:
                       errors: "Password can't be blank"
+
+  /api/v1/wishlists/add:
+    post:
+      summary: Add Book to Wishlist
+      description: Adds a book to the user's wishlist. The `user_id` is extracted from the authentication token.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []  # Ensures the request requires authentication
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                book_id:
+                  type: integer
+                  example: 456
+              required:
+                - book_id
+      responses:
+        "201":
+          description: Book successfully added to wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to wishlist!"
+        "400":
+          description: Invalid request or book already in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book is already in the wishlist"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
