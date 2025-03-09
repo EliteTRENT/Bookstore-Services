@@ -3,6 +3,13 @@ info:
   title: Book Store App
   version: 1.0.0
   description: API documentation for the Book Store app.
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
 
 paths:
   /api/v1/users/signup:
@@ -330,9 +337,6 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Book added to wishlist!"
-        "400":
-          description: Invalid request or book already in wishlist
                     example: "Book created successfully"
                   book:
                     type: object
@@ -369,6 +373,16 @@ paths:
                         type: string
                         nullable: true
                         example: "http://example.com/book-cover.jpg"
+        "400":
+          description: Invalid request or book already in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid request"
         "422":
           description: Validation error (unprocessable entity)
           content:
@@ -377,38 +391,6 @@ paths:
                 type: object
                 properties:
                   errors:
-                    type: string
-                    example: "Book is already in the wishlist"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
-
-  /api/v1/wishlists/getAll:
-    get:
-      summary: Get All Wishlist Items
-      description: Retrieves all books in the authenticated user's wishlist.
-      tags:
-        - Wishlists
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-      responses:
-        "200":
-          description: Wishlist retrieved successfully
                     type: array
                     items:
                       type: string
@@ -419,6 +401,16 @@ paths:
                         value: ["Mrp must be greater than or equal to 0"]
                       invalid_quantity:
                         value: ["Quantity must be an integer"]
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
     get:
       summary: Get All Books
       description: Retrieves a list of all non-deleted books, ordered by creation date (newest first)
@@ -432,7 +424,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  wishlist:
                   message:
                     type: string
                     example: "Books retrieved successfully"
@@ -444,10 +435,6 @@ paths:
                         id:
                           type: integer
                           example: 1
-                        book_id:
-                          type: integer
-                          example: 456
-                        book_name:
                         name:
                           type: string
                           example: "The Great Gatsby"
@@ -518,6 +505,212 @@ paths:
                     example: "Internal server error occurred while retrieving books"
               example:
                 errors: "Internal server error occurred while retrieving books"
+
+  /api/v1/wishlists/add:
+    post:
+      summary: Add Book to Wishlist
+      description: Adds a book to the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wishlist:
+                  type: object
+                  properties:
+                    book_id:
+                      type: integer
+                      example: 456
+                      description: "The ID of the book to add to the wishlist"
+                  required:
+                    - book_id
+      responses:
+        "201":
+          description: Book successfully added to wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to wishlist!"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: User or Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    examples:
+                      user_not_found:
+                        value: "User not found"
+                      book_not_found:
+                        value: "Book not found"
+        "422":
+          description: Validation error or book already in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Book is already in your wishlist"]
+
+  /api/v1/wishlists/getAll:
+    get:
+      summary: Get All Wishlist Items
+      description: Retrieves all active books in the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Wishlist retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        book_id:
+                          type: integer
+                          example: 456
+                        book_name:
+                          type: string
+                          example: "Test Book"
+              examples:
+                with_items:
+                  summary: Wishlist with items
+                  value:
+                    message:
+                      - book_id: 456
+                        book_name: "Test Book"
+                empty_wishlist:
+                  summary: Empty wishlist
+                  value:
+                    message: []
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+
+  /api/v1/wishlists/delete/{book_id}:
+    delete:
+      summary: Remove Book from Wishlist
+      description: Removes a book from the authenticated user's wishlist by marking it as deleted.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: book_id
+          in: path
+          required: true
+          description: The ID of the book to remove from the wishlist
+          schema:
+            type: integer
+            example: 456
+      responses:
+        "200":
+          description: Book successfully removed from wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book removed from wishlist!"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: User not found or book not in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    examples:
+                      user_not_found:
+                        value: "User not found"
+                      book_not_found:
+                        value: "Book not found in wishlist"
 
   /api/v1/books/update/{id}:
     patch:
