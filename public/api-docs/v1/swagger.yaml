@@ -1195,3 +1195,41 @@ paths:
                           example: "Great book! Highly recommend."
         "404":
           description: Book not found
+
+  /api/v1/reviews/{id}:
+    delete:
+      summary: Delete a Review
+      description: Deletes a review by its ID.
+      tags:
+        - Reviews
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the review to be deleted
+          schema:
+            type: integer
+            example: 10
+      responses:
+        "200":
+          description: Review deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Review deleted successfully"
+        "404":
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Review not found"        

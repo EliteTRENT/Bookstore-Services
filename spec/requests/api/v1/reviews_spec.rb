@@ -102,4 +102,27 @@ RSpec.describe ReviewService, type: :service do
     end
   end
 
+  describe ".delete_review" do
+    let!(:review) { Review.create!(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!") }
+
+    context "when the review exists" do
+      it "deletes the review successfully" do
+        result = ReviewService.delete_review(review.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Review deleted successfully")
+        expect(Review.find_by(id: review.id)).to be_nil
+      end
+    end
+
+    context "when the review does not exist" do
+      it "returns an error message" do
+        result = ReviewService.delete_review(-1) # Invalid review ID
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Review not found")
+      end
+    end
+  end
+
 end

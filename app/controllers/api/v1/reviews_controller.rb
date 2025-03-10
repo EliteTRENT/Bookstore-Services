@@ -15,7 +15,15 @@ class Api::V1::ReviewsController < ApplicationController
     render json: { success: true, reviews: result }, status: :ok
   end
 
-  
+  def delete_review
+    result = ReviewService.delete_review(params[:id])
+    if result[:success]
+      render json: { message: result[:message] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
 
   private
 

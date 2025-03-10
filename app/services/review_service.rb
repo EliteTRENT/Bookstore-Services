@@ -12,5 +12,14 @@ class ReviewService
     Review.where(book_id: book_id)
   end
 
-  
+  def self.delete_review(review_id)
+    review = Review.find_by(id: review_id)
+    if review
+      review.destroy
+      { success: true, message: "Review deleted successfully" }
+    else
+      { success: false, error: "Review not found" }
+    end
+  end
+
 end
