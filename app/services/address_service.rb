@@ -1,6 +1,6 @@
 class AddressService
   def self.list_addresses(user)
-    addresses = user.addresses
+    addresses = user&.addresses || []
     { success: true, addresses: addresses }
   end
 
@@ -12,7 +12,6 @@ class AddressService
       { success: false, error: address.errors.full_messages }
     end
   end
-
   def self.update_address(user, address_id, address_params)
     address = user.addresses.find_by(id: address_id)
     if address

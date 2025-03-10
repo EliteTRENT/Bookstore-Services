@@ -1,4 +1,4 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe AddressService, type: :service do
   let!(:user) { User.create!(name: "John Doe", email: "john.doe@gmail.com", password: "Password@123", mobile_number: "9876543210") }
@@ -13,7 +13,7 @@ RSpec.describe AddressService, type: :service do
           state: "DL",
           zip_code: "110001",
           country: "India",
-          type: "home",
+          type: "home", # Enum value, not a subclass
           is_default: false
         )
       end
