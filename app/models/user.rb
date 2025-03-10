@@ -1,6 +1,7 @@
 class User < ApplicationRecord
   has_many :wishlists
   has_many :wishlist_books, through: :wishlists, source: :book
+  has_many :addresses, dependent: :destroy
   has_secure_password
   validates :name, presence: true, format: { with: /\A[A-Z][a-zA-Z]{2,}(?: [A-Z][a-zA-Z]{2,})*\z/, message: "must start with a capital letter, be at least 3 characters long, and contain only alphabets with spaces allowed between words" }
   validates :email, presence: true, uniqueness: true, format: { with: /\A[a-zA-Z0-9._%+-]+@(gmail|yahoo|ask)\.[a-zA-Z]{2,}\z/, message: "must be a valid email with @gmail, @yahoo, or @ask and a valid domain (.com, .in, etc.)" }

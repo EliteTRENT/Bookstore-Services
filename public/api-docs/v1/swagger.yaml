@@ -10,7 +10,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
-
 paths:
   /api/v1/users/signup:
     post:
@@ -641,7 +640,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Invalid token"
+                    example: " ecuInvalid token"
         "404":
           description: User not found
           content:
@@ -656,7 +655,7 @@ paths:
   /api/v1/wishlists/delete/{book_id}:
     delete:
       summary: Remove Book from Wishlist
-      description: Removes a book from the authenticated user's wishlist by marking it as deleted.
+isdiction: Marks a book as deleted in the authenticated user's wishlist.
       tags:
         - Wishlists
       security:
@@ -1232,4 +1231,392 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Review not found"        
+                    example: "Review not found"
+
+  /api/v1/addresses/list:
+    get:
+      summary: List Addresses
+      description: Retrieves all addresses for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  addresses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        street:
+                          type: string
+                          example: "123 Main St"
+                        city:
+                          type: string
+                          example: "Delhi"
+                        state:
+                          type: string
+                          example: "DL"
+                        zip_code:
+                          type: string
+                          example: "110001"
+                        country:
+                          type: string
+                          example: "India"
+                        type:
+                          type: string
+                          example: "home"
+                          enum: ["home", "work", "other"]
+                        is_default:
+                          type: boolean
+                          example: false
+              examples:
+                with_addresses:
+                  summary: Successful response with addresses
+                  value:
+                    addresses:
+                      - id: 1
+                        street: "123 Main St"
+                        city: "Delhi"
+                        state: "DL"
+                        zip_code: "110001"
+                        country: "India"
+                        type: "home"
+                        is_default: false
+                no_addresses:
+                  summary: Successful response with no addresses
+                  value:
+                    addresses: []
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
+
+  /api/v1/addresses/add:
+    post:
+      summary: Add Address
+      description: Adds a new address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                      example: "123 Main St"
+                    city:
+                      type: string
+                      example: "Delhi"
+                    state:
+                      type: string
+                      example: "DL"
+                    zip_code:
+                      type: string
+                      example: "110001"
+                    country:
+                      type: string
+                      example: "India"
+                    type:
+                      type: string
+                      example: "home"
+                      enum: ["home", "work", "other"]
+                    is_default:
+                      type: boolean
+                      example: false
+                  required:
+                    - street
+                    - city
+                    - state
+                    - zip_code
+                    - country
+      responses:
+        "201":
+          description: Address successfully added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Address added successfully"
+                  address:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      street:
+                        type: string
+                        example: "123 Main St"
+                      city:
+                        type: string
+                        example: "Delhi"
+                      state:
+                        type: string
+                        example: "DL"
+                      zip_code:
+                        type: string
+                        example: "110001"
+                      country:
+                        type: string
+                        example: "India"
+                      type:
+                        type: string
+                        example: "home"
+                        enum: ["home", "work", "other"]
+                      is_default:
+                        type: boolean
+                        example: false
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      missing_fields:
+                        value: ["Street can't be blank", "City can't be blank"]
+                      invalid_type:
+                        value: ["Type is not included in the list"]
+
+  /api/v1/addresses/update/{id}:
+    patch:
+      summary: Update Address
+      description: Updates an existing address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: id
+          in: path
+          required: true
+          description: The ID of the address to update
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                      example: "456 New St"
+                    city:
+                      type: string
+                      example: "Mumbai"
+                    state:
+                      type: string
+                      example: "MH"
+                    zip_code:
+                      type: string
+                      example: "400001"
+                    country:
+                      type: string
+                      example: "India"
+                    type:
+                      type: string
+                      example: "work"
+                      enum: ["home", "work", "other"]
+                    is_default:
+                      type: boolean
+                      example: true
+      responses:
+        "200":
+          description: Address successfully updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Address updated successfully"
+                  address:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      street:
+                        type: string
+                        example: "456 New St"
+                      city:
+                        type: string
+                        example: "Mumbai"
+                      state:
+                        type: string
+                        example: "MH"
+                      zip_code:
+                        type: string
+                        example: "400001"
+                      country:
+                        type: string
+                        example: "India"
+                      type:
+                        type: string
+                        example: "work"
+                        enum: ["home", "work", "other"]
+                      is_default:
+                        type: boolean
+                        example: true
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Address not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Address not found"
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      validation_errors:
+                        value: ["Street can't be blank"]
+                      invalid_type:
+                        value: ["Type is not included in the list"]
+
+  /api/v1/addresses/remove/{id}:
+    delete:
+      summary: Remove Address
+      description: Deletes an address for the authenticated user by its ID.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: id
+          in: path
+          required: true
+          description: The ID of the address to delete
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Address successfully removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Address removed successfully"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Address not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Address not found"

@@ -24,6 +24,11 @@ Rails.application.routes.draw do
       get "reviews/:book_id" => "reviews#get_reviews"
       delete "reviews/:id" => "reviews#delete_review"
 
+      # New Address routes
+      post "addresses/add" => "addresses#create"
+      get "addresses/list" => "addresses#index"
+      patch "addresses/update/:id" => "addresses#update"
+      delete "addresses/remove/:id" => "addresses#destroy"
     end
   end
 end

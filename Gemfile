@@ -68,3 +68,10 @@ gem "rswag"
 gem "rspec-rails"
 gem "bunny"
 gem "timecop"
+group :development, :test do
+  gem 'rspec-rails'
+  gem 'rswag-specs'  # For Swagger testing
+end
+
+gem 'rswag-api'  # For Swagger generation
+gem 'rswag-ui'   # For Swagger UI

@@ -413,6 +413,9 @@ DEPENDENCIES
   rails (~> 8.0.1)
   rspec-rails
   rswag
+  rswag-api
+  rswag-specs
+  rswag-ui
   rubocop-rails-omakase
   selenium-webdriver
   solid_cable
