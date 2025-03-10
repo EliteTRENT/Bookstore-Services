@@ -1146,4 +1146,52 @@ paths:
                     type: array
                     items:
                       type: string
-                      example: "Rating can't be blank"              
+                      example: "Rating can't be blank"   
+
+  /api/v1/reviews/{book_id}:
+    get:
+      summary: Get Reviews for a Book
+      description: Fetches all reviews for a specific book.
+      tags:
+        - Reviews
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          description: ID of the book whose reviews need to be fetched
+          schema:
+            type: integer
+            example: 5
+      responses:
+        "200":
+          description: Successfully fetched reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  reviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 10
+                        user_id:
+                          type: integer
+                          example: 1
+                        book_id:
+                          type: integer
+                          example: 5
+                        rating:
+                          type: integer
+                          example: 4
+                        comment:
+                          type: string
+                          example: "Great book! Highly recommend."
+        "404":
+          description: Book not found

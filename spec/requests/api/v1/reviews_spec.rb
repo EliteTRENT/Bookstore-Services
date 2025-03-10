@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe ReviewService, type: :service do
   let!(:user) { User.create!(name: "John Doe", email: "john.doe@gmail.com", password: "Password@123", mobile_number: "9876543210") }
+  let!(:user2) { User.create!(name: "Jane Doe", email: "jane.doe@gmail.com", password: "Password@123", mobile_number: "9876543211") }
   let!(:book) { Book.create!(name: "The Great Gatsby", author: "F. Scott Fitzgerald", mrp: 10.99, discounted_price: 9.99, quantity: 10) }
 
   describe ".add_review" do
@@ -67,4 +68,38 @@ RSpec.describe ReviewService, type: :service do
       end
     end
   end
+
+  describe ".get_reviews" do
+    context "when reviews exist for the book" do
+      before do
+        Review.create!(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
+        Review.create!(user_id: user2.id, book_id: book.id, rating: 4, comment: "Great read!")
+      end
+
+      it "returns all reviews for the given book" do
+        result = ReviewService.get_reviews(book.id)
+
+        expect(result.count).to eq(2)
+        expect(result.first).to be_a(Review)
+        expect(result.first.book_id).to eq(book.id)
+        expect(result.map(&:rating)).to match_array([5, 4])
+      end
+    end
+
+    context "when no reviews exist for the book" do
+      it "returns an empty array" do
+        result = ReviewService.get_reviews(book.id)
+
+        expect(result).to be_empty
+      end
+    end
+
+    context "when an invalid book_id is provided" do
+      it "returns an empty array" do
+        result = ReviewService.get_reviews(-1) # Invalid book_id
+        expect(result).to be_empty
+      end
+    end
+  end
+
 end

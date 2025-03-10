@@ -10,6 +10,11 @@ class Api::V1::ReviewsController < ApplicationController
     end
   end
 
+  def get_reviews
+    result = ReviewService.get_reviews(params[:book_id])
+    render json: { success: true, reviews: result }, status: :ok
+  end
+
   
 
   private

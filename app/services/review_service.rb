@@ -8,5 +8,9 @@ class ReviewService
     end
   end
 
+  def self.get_reviews(book_id)
+    Review.where(book_id: book_id)
+  end
+
   
 end
