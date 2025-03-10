@@ -20,12 +20,16 @@ class AddressService
   end
 
   def self.update_address(user, address_id, address_params)
-    address = user.addresses.find_by(id: address_id)
+    address = user&.addresses&.find_by(id: address_id)
     if address
-      if address.update(address_params)
-        { success: true, message: "Address updated successfully", address: address }
-      else
-        { success: false, error: address.errors.full_messages }
+      begin
+        if address.update(address_params)
+          { success: true, message: "Address updated successfully", address: address }
+        else
+          { success: false, error: address.errors.full_messages }
+        end
+      rescue ArgumentError => e
+        { success: false, error: ["Type is not included in the list"] }
       end
     else
       { success: false, error: "Address not found" }

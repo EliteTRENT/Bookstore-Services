@@ -130,4 +130,70 @@ RSpec.describe AddressService, type: :service do
       end
     end
   end
+
+  describe ".update_address" do
+    let!(:address) do
+      Address.create!(
+        user: user,
+        street: "123 Main St",
+        city: "Delhi",
+        state: "DL",
+        zip_code: "110001",
+        country: "India",
+        type: "home",
+        is_default: false
+      )
+    end
+
+    context "with valid attributes" do
+      let(:valid_attributes) { { street: "456 New St", city: "Mumbai" } }
+
+      it "updates the address successfully" do
+        result = AddressService.update_address(user, address.id, valid_attributes)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Address updated successfully")
+        expect(result[:address].street).to eq("456 New St")
+        expect(result[:address].city).to eq("Mumbai")
+      end
+    end
+
+    context "with invalid attributes" do
+      it "returns an error when street is blank" do
+        invalid_attributes = { street: "" }
+        result = AddressService.update_address(user, address.id, invalid_attributes)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to include("Street can't be blank")
+      end
+
+      it "returns an error when city is blank" do
+        invalid_attributes = { city: "" }
+        result = AddressService.update_address(user, address.id, invalid_attributes)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to include("City can't be blank")
+      end
+
+      it "returns an error when type is invalid" do
+        invalid_attributes = { type: "invalid" }
+        result = AddressService.update_address(user, address.id, invalid_attributes)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to include("Type is not included in the list")
+      end
+    end
+
+    context "when the address does not exist" do
+      it "returns an error" do
+        result = AddressService.update_address(user, 999, { street: "456 New St" })
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Address not found")
+      end
+    end
+
+    context "when the user is nil" do
+      it "returns an error" do
+        result = AddressService.update_address(nil, address.id, { street: "456 New St" })
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Address not found")
+      end
+    end
+  end
 end
