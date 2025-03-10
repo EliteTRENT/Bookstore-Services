@@ -1070,3 +1070,80 @@ paths:
                     example: "Book not found"
               example:
                 errors: "Book not found"
+
+  /api/v1/reviews/add:
+    post:
+      summary: Add a Review
+      description: Allows a user to add a review for a book.
+      tags:
+        - Reviews
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 1
+                    book_id:
+                      type: integer
+                      example: 5
+                    rating:
+                      type: integer
+                      example: 4
+                    comment:
+                      type: string
+                      example: "Great book! Highly recommend."
+                  required:
+                    - user_id
+                    - book_id
+                    - rating
+                    - comment
+      responses:
+        "201":
+          description: Review successfully added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Review added successfully"
+                  review:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 10
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 5
+                      rating:
+                        type: integer
+                        example: 4
+                      comment:
+                        type: string
+                        example: "Great book! Highly recommend."
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Rating can't be blank"              

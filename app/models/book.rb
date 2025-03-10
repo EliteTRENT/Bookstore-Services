@@ -6,4 +6,5 @@ class Book < ApplicationRecord
   validates :mrp, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :discounted_price, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :quantity, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  has_many :reviews, dependent: :destroy
 end

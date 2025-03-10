@@ -19,6 +19,11 @@ Rails.application.routes.draw do
       get "books/show/:id" => "books#show"
       patch "books/toggle_delete/:id" => "books#toggle_delete"
       delete "books/:id" => "books#destroy"
+
+      post "reviews/add" => "reviews#add_review"
+      get "reviews/:book_id" => "reviews#get_reviews"
+      delete "reviews/:id" => "reviews#delete_review"
+
     end
   end
 end
