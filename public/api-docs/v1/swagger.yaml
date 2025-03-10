@@ -1620,3 +1620,102 @@ paths:
                   errors:
                     type: string
                     example: "Address not found"
+
+  /api/v1/orders/create:
+    post:
+      summary: Create Order
+      description: Places an order for a book.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: object
+                  properties:
+                    book_id:
+                      type: integer
+                      example: 1
+                    address_id:
+                      type: integer
+                      example: 10
+                    quantity:
+                      type: integer
+                      example: 2
+                  required:
+                    - book_id
+                    - address_id
+                    - quantity
+      responses:
+        "201":
+          description: Order successfully placed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Order placed successfully"
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        example: "pending"
+        "401":
+          description: Unauthorized - Invalid Token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User, Book, or Address not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid quantity"

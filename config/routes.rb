@@ -29,6 +29,8 @@ Rails.application.routes.draw do
       get "addresses/list" => "addresses#index"
       patch "addresses/update/:id" => "addresses#update"
       delete "addresses/remove/:id" => "addresses#destroy"
+
+      post "orders/create" => "orders#create"
     end
   end
 end

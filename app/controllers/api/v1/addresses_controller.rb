@@ -45,16 +45,16 @@ module Api
       def authenticate_user_from_token!
         token = request.headers["Authorization"]&.split(" ")&.last
         Rails.logger.info "Token received: #{token.inspect}"
-      
+
         unless token
           Rails.logger.info "No token provided"
           render json: { errors: "Unauthorized - No token provided" }, status: :unauthorized
           return
         end
-      
+
         email = JsonWebToken.decode(token)
         Rails.logger.info "Decoded email: #{email.inspect}"
-      
+
         if email
           @current_user = User.find_by(email: email)
           Rails.logger.info "User found: #{@current_user.inspect}"

@@ -5,7 +5,7 @@ class AddressService
   end
 
   def self.add_address(user, address_params)
-    return { success: false, error: ["User must exist"] } unless user
+    return { success: false, error: [ "User must exist" ] } unless user
 
     begin
       address = user.addresses.build(address_params)
@@ -15,7 +15,7 @@ class AddressService
         { success: false, error: address.errors.full_messages }
       end
     rescue ArgumentError => e
-      { success: false, error: ["Type is not included in the list"] }
+      { success: false, error: [ "Type is not included in the list" ] }
     end
   end
 
@@ -29,7 +29,7 @@ class AddressService
           { success: false, error: address.errors.full_messages }
         end
       rescue ArgumentError => e
-        { success: false, error: ["Type is not included in the list"] }
+        { success: false, error: [ "Type is not included in the list" ] }
       end
     else
       { success: false, error: "Address not found" }

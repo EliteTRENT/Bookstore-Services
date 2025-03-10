@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_10_055801) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_10_161543) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_10_055801) do
     t.boolean "is_deleted", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "orders", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "book_id", null: false
+    t.bigint "address_id", null: false
+    t.integer "quantity"
+    t.decimal "price_at_purchase"
+    t.string "status"
+    t.decimal "total_price"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["address_id"], name: "index_orders_on_address_id"
+    t.index ["book_id"], name: "index_orders_on_book_id"
+    t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
   create_table "reviews", force: :cascade do |t|
@@ -73,6 +88,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_10_055801) do
   end
 
   add_foreign_key "addresses", "users"
+  add_foreign_key "orders", "addresses"
+  add_foreign_key "orders", "books"
+  add_foreign_key "orders", "users"
   add_foreign_key "reviews", "books"
   add_foreign_key "reviews", "users"
   add_foreign_key "wishlists", "books"
