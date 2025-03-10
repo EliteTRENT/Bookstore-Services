@@ -24,6 +24,8 @@ Rails.application.routes.draw do
       get "reviews/:book_id" => "reviews#get_reviews"
       delete "reviews/:id" => "reviews#delete_review"
 
+       post "carts/add" => "carts#add_book"
+
     end
   end
 end

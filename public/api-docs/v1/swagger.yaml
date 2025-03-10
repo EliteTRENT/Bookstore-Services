@@ -1146,7 +1146,7 @@ paths:
                     type: array
                     items:
                       type: string
-                      example: "Rating can't be blank"   
+                      example: "Rating can't be blank"
 
   /api/v1/reviews/{book_id}:
     get:
@@ -1232,4 +1232,134 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Review not found"        
+                    example: "Review not found"
+
+  /api/v1/carts/add:
+    post:
+      summary: Add Book to Cart
+      description: Adds a book to the authenticated user's cart. If the book already exists in the cart, the quantity is updated.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 1
+                      description: "The ID of the user adding the book to the cart"
+                    book_id:
+                      type: integer
+                      example: 456
+                      description: "The ID of the book to add to the cart"
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      example: 2
+                      description: "The quantity of the book to add (must be greater than 0)"
+                  required:
+                    - user_id
+                    - book_id
+                    - quantity
+      responses:
+        "201":
+          description: Book successfully added to or updated in the cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to cart"
+                  cart:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 2
+                      is_deleted:
+                        type: boolean
+                        example: false
+              examples:
+                added:
+                  summary: Book added to cart
+                  value:
+                    message: "Book added to cart"
+                    cart:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 2
+                      is_deleted: false
+                updated:
+                  summary: Book quantity updated in cart
+                  value:
+                    message: "Book quantity updated in cart"
+                    cart:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 4
+                      is_deleted: false
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid token"
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    oneOf:
+                      - type: string
+                      - type: array
+                        items:
+                          type: string
+                examples:
+                  invalid_quantity:
+                    summary: Invalid quantity
+                    value:
+                      errors: "Invalid quantity"
+                  missing_fields:
+                    summary: Missing required fields
+                    value:
+                      errors: ["User can't be blank", "Book can't be blank"]
+                  validation_errors:
+                    summary: Other validation errors
+                    value:
+                      errors: ["Quantity must be greater than 0"]
