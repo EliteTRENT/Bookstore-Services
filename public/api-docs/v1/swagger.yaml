@@ -10,7 +10,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
-
 paths:
   /api/v1/users/signup:
     post:
@@ -1363,3 +1362,102 @@ paths:
                     summary: Other validation errors
                     value:
                       errors: ["Quantity must be greater than 0"]
+
+  /api/v1/carts:
+    get:
+      summary: Get User Cart
+      description: Retrieves all active items in the authenticated user's cart, including book details and quantities.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Cart retrieved successfully (returns array even if empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart retrieved successfully"
+                  cart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cart_id:
+                          type: integer
+                          example: 1
+                          description: "The ID of the cart item"
+                        book_id:
+                          type: integer
+                          example: 456
+                          description: "The ID of the book"
+                        book_name:
+                          type: string
+                          example: "Ruby on Rails Guide"
+                          description: "The name of the book"
+                        quantity:
+                          type: integer
+                          example: 2
+                          description: "The quantity of the book in the cart"
+                        price:
+                          type: number
+                          format: float
+                          example: 800.0
+                          description: "The discounted price of the book"
+              examples:
+                with_items:
+                  summary: Cart with items
+                  value:
+                    message: "Cart retrieved successfully"
+                    cart:
+                      - cart_id: 1
+                        book_id: 456
+                        book_name: "Ruby on Rails Guide"
+                        quantity: 2
+                        price: 800.0
+                empty_cart:
+                  summary: Empty cart
+                  value:
+                    message: "Cart is empty"
+                    cart: []
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid token"
+              examples:
+                missing_token:
+                  value:
+                    errors: "Token is missing"
+                invalid_token:
+                  value:
+                    errors: "Invalid token"
+        "422":
+          description: Validation error or error retrieving cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Error retrieving cart: Database error"
+              example:
+                errors: "Error retrieving cart: Database error"

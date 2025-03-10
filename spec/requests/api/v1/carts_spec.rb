@@ -23,13 +23,22 @@ RSpec.describe CartService, type: :service do
     )
   end
 
+  let!(:cart_item) do
+    Cart.create!(
+      user_id: user.id,
+      book_id: book.id,
+      quantity: 2,
+      is_deleted: false
+    )
+  end
+
   describe '.add_book' do
     context 'with valid attributes' do
       it 'adds a book to the cart successfully' do
         result = CartService.add_book(user_id: user.id, book_id: book.id, quantity: 1)
 
         expect(result[:success]).to be_truthy
-        expect(result[:message]).to eq('Book added to cart') # FIXED
+        expect(result[:message]).to eq('Book added to cart')
         expect(result[:cart]).to be_present
         expect(result[:cart].user_id).to eq(user.id)
         expect(result[:cart].book_id).to eq(book.id)
@@ -42,7 +51,7 @@ RSpec.describe CartService, type: :service do
         result = CartService.add_book(user_id: user.id, book_id: 9999, quantity: 1)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq(['Book must exist']) # FIXED
+        expect(result[:error]).to eq(['Book must exist'])
       end
     end
 
@@ -51,7 +60,7 @@ RSpec.describe CartService, type: :service do
         result = CartService.add_book(user_id: 9999, book_id: book.id, quantity: 1)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq(['User must exist']) # FIXED
+        expect(result[:error]).to eq(['User must exist'])
       end
     end
 
@@ -60,7 +69,46 @@ RSpec.describe CartService, type: :service do
         result = CartService.add_book(user_id: user.id, book_id: book.id, quantity: -1)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq('Invalid quantity') # Ensure your service handles this
+        expect(result[:error]).to eq('Invalid quantity')
+      end
+    end
+  end
+
+  describe '.get_cart' do
+    context 'when the cart has items' do
+      it 'retrieves the cart successfully' do
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart retrieved successfully')
+        expect(result[:cart]).to be_an(Array)
+        expect(result[:cart].first[:cart_id]).to eq(cart_item.id)
+        expect(result[:cart].first[:book_id]).to eq(book.id)
+        expect(result[:cart].first[:book_name]).to eq(book.name)
+        expect(result[:cart].first[:quantity]).to eq(cart_item.quantity)
+      end
+    end
+
+    context 'when the cart is empty' do
+      it 'returns an empty cart' do
+        Cart.where(user_id: user.id).delete_all # Empty the cart
+
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart is empty')
+        expect(result[:cart]).to eq([])
+      end
+    end
+
+    context 'when an error occurs' do
+      it 'handles errors gracefully' do
+        allow(Cart).to receive(:where).and_raise(StandardError.new('Database error'))
+
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Error retrieving cart: Database error')
       end
     end
   end
