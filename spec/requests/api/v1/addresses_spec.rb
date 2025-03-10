@@ -196,4 +196,44 @@ RSpec.describe AddressService, type: :service do
       end
     end
   end
+
+  describe ".remove_address" do
+    let!(:address) do
+      Address.create!(
+        user: user,
+        street: "123 Main St",
+        city: "Delhi",
+        state: "DL",
+        zip_code: "110001",
+        country: "India",
+        type: "home",
+        is_default: false
+      )
+    end
+
+    context "when the address exists" do
+      it "deletes the address successfully" do
+        result = AddressService.remove_address(user, address.id)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Address removed successfully")
+        expect(Address.find_by(id: address.id)).to be_nil
+      end
+    end
+
+    context "when the address does not exist" do
+      it "returns an error" do
+        result = AddressService.remove_address(user, 999)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Address not found")
+      end
+    end
+
+    context "when the user is nil" do
+      it "returns an error" do
+        result = AddressService.remove_address(nil, address.id)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Address not found")
+      end
+    end
+  end
 end

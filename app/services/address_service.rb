@@ -37,7 +37,7 @@ class AddressService
   end
 
   def self.remove_address(user, address_id)
-    address = user.addresses.find_by(id: address_id)
+    address = user&.addresses&.find_by(id: address_id)
     if address
       address.destroy
       { success: true, message: "Address removed successfully" }
