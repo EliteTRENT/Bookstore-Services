@@ -4,6 +4,26 @@ info:
   version: 1.0.0
   description: API documentation for the Book Store app.
 
+servers:
+  - url: https://api.bookstore.com
+    description: Production server
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Users
+    description: Operations related to user management
+  - name: Books
+    description: Operations related to book management
+  - name: Wishlists
+    description: Operations related to user wishlists
+  - name: Reviews
+    description: Operations related to book reviews
+  - name: Carts
+    description: Operations related to user carts
+  - name: Addresses
+    description: Operations related to user addresses
+
 components:
   securitySchemes:
     BearerAuth:
@@ -11,6 +31,122 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+            example: "Validation error"
+      required:
+        - errors
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        mobile_number:
+          type: string
+          example: "+919876543210"
+      required:
+        - id
+        - name
+        - email
+        - mobile_number
+
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "The Great Gatsby"
+        author:
+          type: string
+          example: "F. Scott Fitzgerald"
+        mrp:
+          type: number
+          format: float
+          example: 20.99
+        discounted_price:
+          type: number
+          format: float
+          example: 15.99
+        quantity:
+          type: integer
+          example: 100
+        book_details:
+          type: string
+          nullable: true
+          example: "A story of the fabulously wealthy Jay Gatsby"
+        genre:
+          type: string
+          nullable: true
+          example: "Fiction"
+        book_image:
+          type: string
+          nullable: true
+          example: "http://example.com/book-cover.jpg"
+        is_deleted:
+          type: boolean
+          example: false
+      required:
+        - id
+        - name
+        - author
+        - mrp
+        - discounted_price
+        - quantity
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        street:
+          type: string
+          example: "123 Main St"
+        city:
+          type: string
+          example: "Delhi"
+        state:
+          type: string
+          example: "DL"
+        zip_code:
+          type: string
+          example: "110001"
+        country:
+          type: string
+          example: "India"
+        type:
+          type: string
+          example: "home"
+          enum: ["home", "work", "other"]
+        is_default:
+          type: boolean
+          example: false
+      required:
+        - id
+        - street
+        - city
+        - state
+        - zip_code
+        - country
 
 paths:
   /api/v1/users/signup:
@@ -60,33 +196,19 @@ paths:
                     type: string
                     example: "User created successfully"
                   user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 123
-                      name:
-                        type: string
-                        example: "John Doe"
-                      email:
-                        type: string
-                        format: email
-                        example: user@example.com
-                      mobile_number:
-                        type: string
-                        example: "+919876543210"
+                    $ref: '#/components/schemas/User'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Email can't be blank"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/users/login:
     post:
@@ -134,11 +256,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Email is not registered"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/users/forget:
     post:
@@ -188,11 +312,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Email is not registered"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/users/reset/{id}:
     post:
@@ -244,13 +370,15 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "User not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/books:
+  /api/v1/books/create:
     post:
       summary: Create Book
       description: Creates a new book with the provided details.
@@ -320,68 +448,44 @@ paths:
                     type: string
                     example: "Book created successfully"
                   book:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      name:
-                        type: string
-                        example: "The Great Gatsby"
-                      author:
-                        type: string
-                        example: "F. Scott Fitzgerald"
-                      mrp:
-                        type: number
-                        format: float
-                        example: 20.99
-                      discounted_price:
-                        type: number
-                        format: float
-                        example: 15.99
-                      quantity:
-                        type: integer
-                        example: 100
-                      book_details:
-                        type: string
-                        nullable: true
-                        example: "A story of the fabulously wealthy Jay Gatsby"
-                      genre:
-                        type: string
-                        nullable: true
-                        example: "Fiction"
-                      book_image:
-                        type: string
-                        nullable: true
-                        example: "http://example.com/book-cover.jpg"
+                    $ref: '#/components/schemas/Book'
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Name can't be blank"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     get:
       summary: Get All Books
       description: Retrieves a list of all non-deleted books, ordered by creation date (newest first).
       tags:
         - Books
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 10
       responses:
         "200":
           description: Books retrieved successfully
@@ -396,50 +500,19 @@ paths:
                   books:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 1
-                        name:
-                          type: string
-                          example: "The Great Gatsby"
-                        author:
-                          type: string
-                          example: "F. Scott Fitzgerald"
-                        mrp:
-                          type: number
-                          format: float
-                          example: 20.99
-                        discounted_price:
-                          type: number
-                          format: float
-                          example: 15.99
-                        quantity:
-                          type: integer
-                          example: 100
-                        book_details:
-                          type: string
-                          nullable: true
-                          example: "A story of the fabulously wealthy Jay Gatsby"
-                        genre:
-                          type: string
-                          nullable: true
-                          example: "Fiction"
-                        book_image:
-                          type: string
-                          nullable: true
-                          example: "http://example.com/book-cover.jpg"
+                      $ref: '#/components/schemas/Book'
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Internal server error occurred while retrieving books"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/books/update/{id}:
     patch:
@@ -513,62 +586,25 @@ paths:
                     type: string
                     example: "Book updated successfully"
                   book:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      name:
-                        type: string
-                        example: "The Great Gatsby"
-                      author:
-                        type: string
-                        example: "F. Scott Fitzgerald"
-                      mrp:
-                        type: number
-                        format: float
-                        example: 20.99
-                      discounted_price:
-                        type: number
-                        format: float
-                        example: 15.99
-                      quantity:
-                        type: integer
-                        example: 100
-                      book_details:
-                        type: string
-                        nullable: true
-                        example: "A story of the fabulously wealthy Jay Gatsby"
-                      genre:
-                        type: string
-                        nullable: true
-                        example: "Fiction"
-                      book_image:
-                        type: string
-                        nullable: true
-                        example: "http://example.com/book-cover.jpg"
+                    $ref: '#/components/schemas/Book'
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error or book not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Book not found or has been deleted"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/books/show/{id}:
     get:
@@ -596,50 +632,19 @@ paths:
                     type: string
                     example: "Book retrieved successfully"
                   book:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      name:
-                        type: string
-                        example: "The Great Gatsby"
-                      author:
-                        type: string
-                        example: "F. Scott Fitzgerald"
-                      mrp:
-                        type: number
-                        format: float
-                        example: 20.99
-                      discounted_price:
-                        type: number
-                        format: float
-                        example: 15.99
-                      quantity:
-                        type: integer
-                        example: 100
-                      book_details:
-                        type: string
-                        nullable: true
-                        example: "A story of the fabulously wealthy Jay Gatsby"
-                      genre:
-                        type: string
-                        nullable: true
-                        example: "Fiction"
-                      book_image:
-                        type: string
-                        nullable: true
-                        example: "http://example.com/book-cover.jpg"
+                    $ref: '#/components/schemas/Book'
         "404":
           description: Book not found or has been deleted
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Book not found or has been deleted"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/books/toggle_delete/{id}:
     patch:
@@ -669,63 +674,25 @@ paths:
                     type: string
                     example: "Book marked as deleted"
                   book:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      name:
-                        type: string
-                        example: "The Great Gatsby"
-                      author:
-                        type: string
-                        example: "F. Scott Fitzgerald"
-                      mrp:
-                        type: number
-                        format: float
-                        example: 20.99
-                      discounted_price:
-                        type: number
-                        format: float
-                        example: 15.99
-                      quantity:
-                        type: integer
-                        example: 100
-                      book_details:
-                        type: string
-                        nullable: true
-                        example: "A story of the fabulously wealthy Jay Gatsby"
-                      genre:
-                        type: string
-                        nullable: true
-                        example: "Fiction"
-                      book_image:
-                        type: string
-                        nullable: true
-                        example: "http://example.com/book-cover.jpg"
-                      is_deleted:
-                        type: boolean
-                        example: true
+                    $ref: '#/components/schemas/Book'
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Book not found or update failed due to validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Book not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/books/{id}:
     delete:
@@ -759,21 +726,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Book not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Book not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/wishlists/add:
     post:
@@ -814,33 +779,25 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: User or Book not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Book not found"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error or book already in wishlist
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Book is already in your wishlist"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/wishlists/getAll:
     get:
@@ -874,21 +831,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: User not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "User not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/wishlists/delete/{book_id}:
     delete:
@@ -922,21 +877,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: User not found or book not in wishlist
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Book not found in wishlist"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/reviews/add:
     post:
@@ -964,6 +917,8 @@ paths:
                       example: 5
                     rating:
                       type: integer
+                      minimum: 1
+                      maximum: 5
                       example: 4
                     comment:
                       type: string
@@ -1007,23 +962,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Rating can't be blank"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/reviews/{book_id}:
     get:
@@ -1075,11 +1026,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Book not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/reviews/{id}:
     delete:
@@ -1113,21 +1066,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Review not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Review not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/carts/add:
     post:
@@ -1195,25 +1146,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Invalid token"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Quantity must be greater than 0"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/carts:
+  /api/v1/carts/{user_id}:
     get:
       summary: Get User Cart
       description: Retrieves all active items in the authenticated user's cart, including book details and quantities.
@@ -1221,6 +1168,13 @@ paths:
         - Carts
       security:
         - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: ID of the user whose cart is being retrieved
+          schema:
+            type: integer
       responses:
         "200":
           description: Cart retrieved successfully (returns array even if empty)
@@ -1229,6 +1183,9 @@ paths:
               schema:
                 type: object
                 properties:
+                  success:
+                    type: boolean
+                    example: true
                   message:
                     type: string
                     example: "Cart retrieved successfully"
@@ -1258,23 +1215,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Invalid token"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error or error retrieving cart
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Error retrieving cart: Database error"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/carts/remove_book/{id}:
+  /api/v1/remove_book/{id}:
     delete:
       summary: Soft Delete a Book from Cart
       description: Soft deletes a book from the cart by marking it as deleted with a timestamp, keeping it in the database.
@@ -1328,21 +1283,25 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
-        "422":
-          description: Cart item not found or error during soft deletion
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Cart item not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Cart item not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Error during soft deletion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/addresses/list:
     get:
@@ -1363,43 +1322,19 @@ paths:
                   addresses:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 1
-                        street:
-                          type: string
-                          example: "123 Main St"
-                        city:
-                          type: string
-                          example: "Delhi"
-                        state:
-                          type: string
-                          example: "DL"
-                        zip_code:
-                          type: string
-                          example: "110001"
-                        country:
-                          type: string
-                          example: "India"
-                        type:
-                          type: string
-                          example: "home"
-                          enum: ["home", "work", "other"]
-                        is_default:
-                          type: boolean
-                          example: false
+                      $ref: '#/components/schemas/Address'
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/addresses/add:
     post:
@@ -1459,55 +1394,25 @@ paths:
                     type: string
                     example: "Address added successfully"
                   address:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      street:
-                        type: string
-                        example: "123 Main St"
-                      city:
-                        type: string
-                        example: "Delhi"
-                      state:
-                        type: string
-                        example: "DL"
-                      zip_code:
-                        type: string
-                        example: "110001"
-                      country:
-                        type: string
-                        example: "India"
-                      type:
-                        type: string
-                        example: "home"
-                        enum: ["home", "work", "other"]
-                      is_default:
-                        type: boolean
-                        example: false
+                    $ref: '#/components/schemas/Address'
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Street can't be blank"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/addresses/update/{id}:
     patch:
@@ -1569,65 +1474,31 @@ paths:
                     type: string
                     example: "Address updated successfully"
                   address:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      street:
-                        type: string
-                        example: "456 New St"
-                      city:
-                        type: string
-                        example: "Mumbai"
-                      state:
-                        type: string
-                        example: "MH"
-                      zip_code:
-                        type: string
-                        example: "400001"
-                      country:
-                        type: string
-                        example: "India"
-                      type:
-                        type: string
-                        example: "work"
-                        enum: ["home", "work", "other"]
-                      is_default:
-                        type: boolean
-                        example: true
+                    $ref: '#/components/schemas/Address'
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Address not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Address not found"
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                      example: "Street can't be blank"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/addresses/remove/{id}:
     delete:
@@ -1661,18 +1532,16 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Address not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Address not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

@@ -1,6 +1,7 @@
 class CartService
   def self.add_book(cart_params)
     return { success: false, error: "Invalid quantity" } if cart_params[:quantity].nil? || cart_params[:quantity].to_i <= 0
+
     cart_item = Cart.find_by(user_id: cart_params[:user_id], book_id: cart_params[:book_id], is_deleted: false)
 
     if cart_item
@@ -40,12 +41,12 @@ class CartService
     { success: false, error: "Error retrieving cart: #{e.message}" }
   end
 
-  # New method for soft deleting a book
+  # ✅ Soft delete a book (updates `deleted_at` column)
   def self.soft_delete_book(book_id)
-    book = Book.active.find_by(id: book_id)
+    book = Book.active.find_by(id: book_id)  # ✅ Use active scope (is_deleted: false)
     return { success: false, error: 'Book not found' } unless book
-
-    if book.soft_delete
+  
+    if book.update(is_deleted: true)  # ✅ Update is_deleted instead of deleted_at
       { success: true, message: 'Book soft deleted successfully', book: book }
     else
       { success: false, error: book.errors.full_messages }
@@ -53,4 +54,5 @@ class CartService
   rescue StandardError => e
     { success: false, error: "Error soft deleting book: #{e.message}" }
   end
+  
 end

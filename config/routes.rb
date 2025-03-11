@@ -28,10 +28,10 @@ Rails.application.routes.draw do
       get "addresses/list" => "addresses#index"
       patch "addresses/update/:id" => "addresses#update"
       delete "addresses/remove/:id" => "addresses#destroy"
-      
+
       post "carts/add" => "carts#add_book"
-      get "carts" => "carts#get_cart"
-      delete "carts/remove_book/:id" => "carts#soft_delete_book"
+      get "carts/:user_id" => "carts#get_cart"
+      delete "remove_book/:id" => "carts#soft_delete_book"
     end
   end
 end
