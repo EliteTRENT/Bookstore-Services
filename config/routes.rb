@@ -33,6 +33,7 @@ Rails.application.routes.draw do
       post "orders/create" => "orders#create"
       get "orders" => "orders#index"
       get "orders/:id" => "orders#show"
+      patch "orders/update_status/:id" => "orders#update_status"
     end
   end
 end

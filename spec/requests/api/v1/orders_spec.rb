@@ -311,4 +311,103 @@ RSpec.describe OrderService, type: :service do
       end
     end
   end
+
+  describe ".update_order_status" do
+    let!(:order) do
+      user.orders.create!(
+        book: book,
+        address: address,
+        quantity: 2,
+        price_at_purchase: book.discounted_price,
+        status: "pending",
+        total_price: 2 * book.discounted_price
+      )
+    end
+
+    context "when the status update is successful" do
+      it "returns a success response and updates the order status" do
+        response = OrderService.update_order_status(valid_token, order.id, "shipped")
+
+        expect(response[:success]).to be true
+        expect(response[:message]).to eq("Order status updated successfully")
+        expect(response[:order]).to be_present
+        expect(response[:order].status).to eq("shipped")
+        expect(order.reload.status).to eq("shipped")
+      end
+    end
+
+    context "when token is invalid" do
+      it "returns an error response" do
+        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
+        response = OrderService.update_order_status("invalid.token", order.id, "shipped")
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Invalid token")
+      end
+    end
+
+    context "when user is not found" do
+      it "returns an error response" do
+        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return("nonexistent@gmail.com")
+        response = OrderService.update_order_status(valid_token, order.id, "shipped")
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("User not found")
+      end
+    end
+
+    context "when order is not found" do
+      it "returns an error response" do
+        response = OrderService.update_order_status(valid_token, 9999, "shipped")
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Order not found")
+      end
+    end
+
+    context "when order belongs to another user" do
+      let!(:other_user) do
+        User.create!(
+          name: "Jane Doe",
+          email: "jane@gmail.com",
+          password: "Password123!",
+          mobile_number: "+919876543211"
+        )
+      end
+      let!(:other_order) do
+        other_user.orders.create!(
+          book: book,
+          address: address,
+          quantity: 1,
+          price_at_purchase: book.discounted_price,
+          status: "pending",
+          total_price: book.discounted_price
+        )
+      end
+
+      it "returns an error response" do
+        response = OrderService.update_order_status(valid_token, other_order.id, "shipped")
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Order not found")
+      end
+    end
+
+    context "when status update fails due to validation" do
+      before do
+        # Assuming a validation exists in the Order model that prevents invalid status values
+        allow_any_instance_of(Order).to receive(:update).with(status: "invalid").and_return(false)
+        allow_any_instance_of(Order).to receive(:errors).and_return(
+          double(:errors, full_messages: ["Status must be a valid status"])
+        )
+      end
+
+      it "returns an error response with validation errors" do
+        response = OrderService.update_order_status(valid_token, order.id, "invalid")
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to include("Status must be a valid status")
+      end
+    end
+  end
 end
