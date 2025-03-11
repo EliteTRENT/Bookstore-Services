@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       delete "addresses/remove/:id" => "addresses#destroy"
 
       post "orders/create" => "orders#create"
+      get "orders" => "orders#index"
     end
   end
 end

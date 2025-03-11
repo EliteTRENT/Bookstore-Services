@@ -1719,3 +1719,115 @@ paths:
                   errors:
                     type: string
                     example: "Invalid quantity"
+
+  /api/v1/orders:
+    get:
+      summary: Get All Orders
+      description: Retrieves all orders for the authenticated user based on the provided JWT token.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 101
+                        book_id:
+                          type: integer
+                          example: 1
+                        address_id:
+                          type: integer
+                          example: 10
+                        quantity:
+                          type: integer
+                          example: 2
+                        price_at_purchase:
+                          type: number
+                          format: float
+                          example: 299.99
+                        total_price:
+                          type: number
+                          format: float
+                          example: 599.98
+                        status:
+                          type: string
+                          example: "pending"
+              examples:
+                with_orders:
+                  summary: Successful response with orders
+                  value:
+                    orders:
+                      - id: 101
+                        book_id: 1
+                        address_id: 10
+                        quantity: 2
+                        price_at_purchase: 299.99
+                        total_price: 599.98
+                        status: "pending"
+                      - id: 102
+                        book_id: 2
+                        address_id: 10
+                        quantity: 1
+                        price_at_purchase: 15.99
+                        total_price: 15.99
+                        status: "shipped"
+                no_orders:
+                  summary: Successful response with no orders
+                  value:
+                    orders: []
+        "401":
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+              example:
+                error: "Invalid token"
+        "404":
+          description: Not Found - User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+              example:
+                error: "User not found"
+        "422":
+          description: Unprocessable Entity - No orders found or other errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "No orders found"
+              example:
+                errors: "No orders found"

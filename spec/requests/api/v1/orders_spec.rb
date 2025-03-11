@@ -165,4 +165,68 @@ RSpec.describe OrderService, type: :service do
       end
     end
   end
+
+  describe ".get_all_orders" do
+    context "when user has orders" do
+      let!(:order1) do
+        user.orders.create!(
+          book: book,
+          address: address,
+          quantity: 2,
+          price_at_purchase: book.discounted_price,
+          status: "pending",
+          total_price: 2 * book.discounted_price
+        )
+      end
+
+      let!(:order2) do
+        user.orders.create!(
+          book: book,
+          address: address,
+          quantity: 1,
+          price_at_purchase: book.discounted_price,
+          status: "shipped",
+          total_price: book.discounted_price
+        )
+      end
+
+      it "returns a success response with all user orders" do
+        response = OrderService.get_all_orders(valid_token)
+
+        expect(response[:success]).to be true
+        expect(response[:orders]).to be_present
+        expect(response[:orders].count).to eq(2)
+        expect(response[:orders]).to include(order1, order2)
+      end
+    end
+
+    context "when user has no orders" do
+      it "returns an error response" do
+        response = OrderService.get_all_orders(valid_token)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("No orders found")
+      end
+    end
+
+    context "when token is invalid" do
+      it "returns an error response" do
+        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
+        response = OrderService.get_all_orders("invalid.token")
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Invalid token")
+      end
+    end
+
+    context "when user is not found" do
+      it "returns an error response" do
+        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return("nonexistent@gmail.com")
+        response = OrderService.get_all_orders(valid_token)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("User not found")
+      end
+    end
+  end
 end

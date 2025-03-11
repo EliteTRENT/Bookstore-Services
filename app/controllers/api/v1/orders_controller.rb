@@ -15,6 +15,20 @@ class Api::V1::OrdersController < ApplicationController
     end
   end
 
+  def index
+    token = request.headers["Authorization"]&.split(" ")&.last
+    result = OrderService.get_all_orders(token)
+    if result[:success]
+      render json: { orders: result[:orders] }, status: :ok
+    elsif result[:error] == "Invalid token"
+      render json: { error: result[:error] }, status: :unauthorized
+    elsif result[:error] == "User not found"
+      render json: { error: result[:error] }, status: :not_found
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
   def order_params
     params.require(:order).permit(:book_id, :address_id, :quantity)
   end

@@ -32,4 +32,17 @@ class OrderService
       { success: false, error: order.errors.full_messages }
     end
   end
+
+  def self.get_all_orders(token)
+    token_email = JsonWebToken.decode(token)
+    return { success: false, error: "Invalid token" } unless token_email
+
+    user = User.find_by(email: token_email)
+    return { success: false, error: "User not found" } unless user
+
+    orders = user.orders
+    return { success: false, error: "No orders found" } if orders.empty?
+
+    { success: true, orders: orders }
+  end
 end
