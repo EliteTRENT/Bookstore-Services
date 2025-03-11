@@ -17,9 +17,11 @@ module Api
         render json: result, status: :ok
       end
 
-      # ✅ Soft delete book API
       def soft_delete_book
-        result = CartService.soft_delete_book(params[:id])
+        token = request.headers["Authorization"]&.split(" ")&.last
+        token_email = JsonWebToken.decode(token)
+        user = User.find_by(email: token_email)
+        result = CartService.soft_delete_book(params[:id], user.id) # Pass book_id and current_user.id
         if result[:success]
           render json: { message: result[:message], book: result[:book] }, status: :ok
         else

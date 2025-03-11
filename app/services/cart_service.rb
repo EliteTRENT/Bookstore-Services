@@ -42,17 +42,27 @@ class CartService
   end
 
   # ✅ Soft delete a book (updates `deleted_at` column)
-  def self.soft_delete_book(book_id)
-    book = Book.active.find_by(id: book_id)  # ✅ Use active scope (is_deleted: false)
-    return { success: false, error: 'Book not found' } unless book
-  
-    if book.update(is_deleted: true)  # ✅ Update is_deleted instead of deleted_at
-      { success: true, message: 'Book soft deleted successfully', book: book }
+  def self.soft_delete_book(book_id, user_id)
+    cart_item = Cart.find_by(book_id: book_id, user_id: user_id, is_deleted: false)
+    return { success: false, error: "Cart item not found" } unless cart_item
+
+    if cart_item.quantity > 1
+      # Decrease quantity by 1
+      cart_item.quantity -= 1
+      if cart_item.save
+        { success: true, message: "Book quantity decreased in cart", book: cart_item }
+      else
+        { success: false, error: cart_item.errors.full_messages }
+      end
     else
-      { success: false, error: book.errors.full_messages }
+      # Quantity is 1, so soft-delete the cart item
+      if cart_item.update(is_deleted: true)
+        { success: true, message: "Book removed from cart", book: cart_item }
+      else
+        { success: false, error: cart_item.errors.full_messages }
+      end
     end
   rescue StandardError => e
-    { success: false, error: "Error soft deleting book: #{e.message}" }
+    { success: false, error: "Error updating cart item: #{e.message}" }
   end
-  
 end

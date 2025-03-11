@@ -2,7 +2,15 @@ require 'rails_helper'
 
 RSpec.describe "Wishlists API", type: :request do
   let!(:user) { User.create!(name: "Test User", email: "test1234@gmail.com", password: "Password@1234", mobile_number: 7087077804) }
-  let!(:book) { Book.create!(name: "Test Book", author: "Author Name") }
+  let!(:book) {
+  Book.create!(
+    name: "Test Book",
+    author: "Author Name",
+    mrp: 500,
+    discounted_price: 450,
+    quantity: 10
+  )
+}
   let(:token) { JsonWebToken.encode(email: user.email) }
 
   describe "POST /api/v1/wishlists/add" do
