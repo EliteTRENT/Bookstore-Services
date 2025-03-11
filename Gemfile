@@ -75,3 +75,4 @@ end
 
 gem 'rswag-api'  # For Swagger generation
 gem 'rswag-ui'   # For Swagger UI
+gem

@@ -8,10 +8,10 @@ class Book < ApplicationRecord
   validates :quantity, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   has_many :reviews, dependent: :destroy
 
-  scope :active, -> { where(deleted_at: nil) }
-  scope :deleted, -> { where.not(deleted_at: nil) }
+  scope :active, -> { where(is_deleted: false) }  # ✅ Filter active books
+  scope :deleted, -> { where(is_deleted: true) }  # ✅ Filter deleted books
 
   def soft_delete
-    update(deleted_at: Time.current)
+    update(is_deleted: true)  # ✅ Use is_deleted instead of deleted_at
   end
 end
