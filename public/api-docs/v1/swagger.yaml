@@ -640,7 +640,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: " ecuInvalid token"
+                    example: "Invalid token"
         "404":
           description: User not found
           content:
@@ -655,7 +655,7 @@ paths:
   /api/v1/wishlists/delete/{book_id}:
     delete:
       summary: Remove Book from Wishlist
-      isdiction: Marks a book as deleted in the authenticated user's wishlist.
+      description: Marks a book as deleted in the authenticated user's wishlist.
       tags:
         - Wishlists
       security:
@@ -1831,3 +1831,104 @@ paths:
                     example: "No orders found"
               example:
                 errors: "No orders found"
+
+  /api/v1/orders/{id}:
+    get:
+      summary: Get Order by ID
+      description: Retrieves a specific order by its ID for the authenticated user.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to retrieve
+          schema:
+            type: integer
+            example: 101
+      responses:
+        "200":
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+                        example: "pending"
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+        "401":
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Order not found"
+        "422":
+          description: Unprocessable Entity - Other errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Unexpected error occurred"]

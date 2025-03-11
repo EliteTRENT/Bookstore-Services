@@ -45,4 +45,17 @@ class OrderService
 
     { success: true, orders: orders }
   end
+
+  def self.get_order_by_id(token, order_id)
+    token_email = JsonWebToken.decode(token)
+    return { success: false, error: "Invalid token" } unless token_email
+
+    user = User.find_by(email: token_email)
+    return { success: false, error: "User not found" } unless user
+
+    order = user.orders.find_by(id: order_id)
+    return { success: false, error: "Order not found" } unless order
+
+    { success: true, order: order }
+  end
 end

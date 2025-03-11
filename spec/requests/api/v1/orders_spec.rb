@@ -229,4 +229,86 @@ RSpec.describe OrderService, type: :service do
       end
     end
   end
+
+  describe ".get_order_by_id" do
+    let!(:order) do
+      user.orders.create!(
+        book: book,
+        address: address,
+        quantity: 2,
+        price_at_purchase: book.discounted_price,
+        status: "pending",
+        total_price: 2 * book.discounted_price
+      )
+    end
+
+    context "when order exists for the user" do
+      it "returns a success response with the order" do
+        response = OrderService.get_order_by_id(valid_token, order.id)
+
+        expect(response[:success]).to be true
+        expect(response[:order]).to eq(order)
+        expect(response[:order].user).to eq(user)
+        expect(response[:order].book).to eq(book)
+        expect(response[:order].address).to eq(address)
+      end
+    end
+
+    context "when token is invalid" do
+      it "returns an error response" do
+        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
+        response = OrderService.get_order_by_id("invalid.token", order.id)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Invalid token")
+      end
+    end
+
+    context "when user is not found" do
+      it "returns an error response" do
+        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return("nonexistent@gmail.com")
+        response = OrderService.get_order_by_id(valid_token, order.id)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("User not found")
+      end
+    end
+
+    context "when order is not found" do
+      it "returns an error response" do
+        response = OrderService.get_order_by_id(valid_token, 9999)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Order not found")
+      end
+    end
+
+    context "when order belongs to another user" do
+      let!(:other_user) do
+        User.create!(
+          name: "Jane Doe",
+          email: "jane@gmail.com",
+          password: "Password123!",
+          mobile_number: "+919876543211"
+        )
+      end
+      let!(:other_order) do
+        other_user.orders.create!(
+          book: book,
+          address: address,
+          quantity: 1,
+          price_at_purchase: book.discounted_price,
+          status: "shipped",
+          total_price: book.discounted_price
+        )
+      end
+
+      it "returns an error response" do
+        response = OrderService.get_order_by_id(valid_token, other_order.id)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("Order not found")
+      end
+    end
+  end
 end
