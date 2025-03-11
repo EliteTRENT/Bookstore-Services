@@ -39,4 +39,18 @@ class CartService
   rescue StandardError => e
     { success: false, error: "Error retrieving cart: #{e.message}" }
   end
+
+  # New method for soft deleting a book
+  def self.soft_delete_book(book_id)
+    book = Book.active.find_by(id: book_id)
+    return { success: false, error: 'Book not found' } unless book
+
+    if book.soft_delete
+      { success: true, message: 'Book soft deleted successfully', book: book }
+    else
+      { success: false, error: book.errors.full_messages }
+    end
+  rescue StandardError => e
+    { success: false, error: "Error soft deleting book: #{e.message}" }
+  end
 end

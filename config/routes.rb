@@ -26,6 +26,7 @@ Rails.application.routes.draw do
 
        post "carts/add" => "carts#add_book"
        get "carts" => "carts#get_cart"
+       delete "carts/remove_book/:id" => "carts#soft_delete_book"
     end
   end
 end

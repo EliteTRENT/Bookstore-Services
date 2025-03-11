@@ -112,4 +112,61 @@ RSpec.describe CartService, type: :service do
       end
     end
   end
+
+  # New tests for soft delete functionality
+  describe '.soft_delete_book' do
+    context 'when book exists and is not soft deleted' do
+      it 'soft deletes the book successfully' do
+        result = CartService.soft_delete_book(book.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Book soft deleted successfully')
+        expect(result[:book]).to be_present
+        expect(result[:book].deleted_at).not_to be_nil
+      end
+    end
+
+    context 'when book does not exist' do
+      it 'returns an error' do
+        result = CartService.soft_delete_book(9999)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Book not found')
+      end
+    end
+
+    context 'when book is already soft deleted' do
+      let!(:deleted_book) do
+        Book.create!(
+          name: 'Deleted Book',
+          author: 'Test Author',
+          mrp: 1000.0,
+          discounted_price: 800.0,
+          quantity: 10,
+          book_details: 'Test details',
+          genre: 'Test genre',
+          book_image: 'test_url',
+          deleted_at: Time.current
+        )
+      end
+
+      it 'returns book not found' do
+        result = CartService.soft_delete_book(deleted_book.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Book not found')
+      end
+    end
+
+    context 'when an error occurs' do
+      it 'handles errors gracefully' do
+        allow(Book).to receive(:active).and_raise(StandardError.new('Database error'))
+        
+        result = CartService.soft_delete_book(book.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Error soft deleting book: Database error')
+      end
+    end
+  end
 end

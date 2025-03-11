@@ -11,11 +11,21 @@ class Api::V1::CartsController < ApplicationController
     end
   end
 
-
   def get_cart
     result = CartService.get_cart(current_user.id)  # Assuming current_user is set by authentication
     if result[:success]
       render json: { message: result[:message], cart: result[:cart] }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
+  # New soft delete action added
+  def soft_delete_book
+    result = BookSoftDeleteService.new(params[:id]).perform
+    
+    if result[:success]
+      render json: { message: result[:message], book: result[:book] }, status: :ok
     else
       render json: { errors: result[:error] }, status: :unprocessable_entity
     end
@@ -49,7 +59,6 @@ class Api::V1::CartsController < ApplicationController
       render json: { error: 'Invalid token' }, status: :unauthorized
     end
   end
-  
   
   def current_user
     @current_user

@@ -1461,3 +1461,91 @@ paths:
                     example: "Error retrieving cart: Database error"
               example:
                 errors: "Error retrieving cart: Database error"
+
+  # New endpoint for soft deleting a book
+  /api/v1/carts/remove_book/{id}:
+    delete:
+      summary: Soft Delete a Book
+      description: Soft deletes a book by marking it as deleted with a timestamp, keeping it in the database
+      tags:
+        - Carts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to soft delete
+          schema:
+            type: integer
+            example: 456
+      responses:
+        "200":
+          description: Book soft deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book soft deleted successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 456
+                      name:
+                        type: string
+                        example: "Ruby on Rails Guide"
+                      author:
+                        type: string
+                        example: "David Heinemeier Hansson"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 1000.0
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 800.0
+                      quantity:
+                        type: integer
+                        example: 10
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A complete guide to Rails"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Technology"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "image_url"
+                      deleted_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+        "422":
+          description: Book not found or error during soft deletion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    oneOf:
+                      - type: string
+                      - type: array
+                        items:
+                          type: string
+                examples:
+                  not_found:
+                    summary: Book not found
+                    value:
+                      errors: "Book not found"
+                  error:
+                    summary: Error during deletion
+                    value:
+                      errors: "Error soft deleting book: Database error"
