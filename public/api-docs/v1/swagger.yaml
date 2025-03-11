@@ -652,7 +652,7 @@ paths:
                     type: string
                     example: "User not found"
 
-  /api/v1/wishlists/delete/{book_id}:
+  /api/v1/wishlists/destroy/{book_id}:
     delete:
       summary: Remove Book from Wishlist
       isdiction: Marks a book as deleted in the authenticated user's wishlist.
