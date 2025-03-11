@@ -59,6 +59,10 @@ class UserService
     end
   end
 
+  def self.get_secret_key
+    'my_secret_key'  
+  end
+
   private
   @@otp = nil
   @@otp_generated_at = nil

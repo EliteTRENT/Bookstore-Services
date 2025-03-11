@@ -3,6 +3,7 @@ info:
   title: Book Store App
   version: 1.0.0
   description: API documentation for the Book Store app.
+
 components:
   securitySchemes:
     BearerAuth:
@@ -10,6 +11,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
+
 paths:
   /api/v1/users/signup:
     post:
@@ -137,8 +139,6 @@ paths:
                   errors:
                     type: string
                     example: "Email is not registered"
-                example:
-                  errors: "Wrong Password"
 
   /api/v1/users/forget:
     post:
@@ -193,8 +193,6 @@ paths:
                   errors:
                     type: string
                     example: "Email is not registered"
-                example:
-                  errors: "Failed to send OTP, please try again"
 
   /api/v1/users/reset/{id}:
     post:
@@ -251,23 +249,15 @@ paths:
                   errors:
                     type: string
                     example: "User not found"
-                examples:
-                  user_not_found:
-                    value:
-                      errors: "User not found"
-                  invalid_otp:
-                    value:
-                      errors: "Invalid or expired OTP"
-                  validation_error:
-                    value:
-                      errors: "Password can't be blank"
 
   /api/v1/books:
     post:
       summary: Create Book
-      description: Creates a new book with the provided details
+      description: Creates a new book with the provided details.
       tags:
         - Books
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -282,44 +272,36 @@ paths:
                       type: string
                       example: "The Great Gatsby"
                       minLength: 1
-                      description: "Book title (required)"
                     author:
                       type: string
                       example: "F. Scott Fitzgerald"
                       minLength: 1
-                      description: "Author name (required)"
                     mrp:
                       type: number
                       format: float
                       minimum: 0
                       example: 20.99
-                      description: "Maximum retail price (must be >= 0)"
                     discounted_price:
                       type: number
                       format: float
                       minimum: 0
                       example: 15.99
-                      description: "Discounted price (must be >= 0)"
                     quantity:
                       type: integer
                       minimum: 0
                       example: 100
-                      description: "Stock quantity (must be integer >= 0)"
                     book_details:
                       type: string
                       nullable: true
                       example: "A story of the fabulously wealthy Jay Gatsby"
-                      description: "Additional book details (optional)"
                     genre:
                       type: string
                       nullable: true
                       example: "Fiction"
-                      description: "Book genre (optional)"
                     book_image:
                       type: string
                       nullable: true
                       example: "http://example.com/book-cover.jpg"
-                      description: "URL to book cover image (optional)"
                   required:
                     - name
                     - author
@@ -372,8 +354,8 @@ paths:
                         type: string
                         nullable: true
                         example: "http://example.com/book-cover.jpg"
-        "400":
-          description: Invalid request or book already in wishlist
+        "401":
+          description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
@@ -381,7 +363,7 @@ paths:
                 properties:
                   errors:
                     type: string
-                    example: "Invalid request"
+                    example: "Unauthorized"
         "422":
           description: Validation error (unprocessable entity)
           content:
@@ -393,31 +375,16 @@ paths:
                     type: array
                     items:
                       type: string
-                    examples:
-                      missing_fields:
-                        value: ["Name can't be blank", "Author can't be blank"]
-                      invalid_numbers:
-                        value: ["Mrp must be greater than or equal to 0"]
-                      invalid_quantity:
-                        value: ["Quantity must be an integer"]
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Unauthorized"
+                      example: "Name can't be blank"
+
     get:
       summary: Get All Books
-      description: Retrieves a list of all non-deleted books, ordered by creation date (newest first)
+      description: Retrieves a list of all non-deleted books, ordered by creation date (newest first).
       tags:
         - Books
       responses:
         "200":
-          description: Books retrieved successfully (returns array even if empty)
+          description: Books retrieved successfully
           content:
             application/json:
               schema:
@@ -463,37 +430,8 @@ paths:
                           type: string
                           nullable: true
                           example: "http://example.com/book-cover.jpg"
-              examples:
-                with_books:
-                  summary: Successful response with books
-                  value:
-                    message: "Books retrieved successfully"
-                    books:
-                      - id: 1
-                        name: "The Great Gatsby"
-                        author: "F. Scott Fitzgerald"
-                        mrp: 20.99
-                        discounted_price: 15.99
-                        quantity: 100
-                        book_details: "A story of the fabulously wealthy Jay Gatsby"
-                        genre: "Fiction"
-                        book_image: "http://example.com/book-cover.jpg"
-                      - id: 2
-                        name: "1984"
-                        author: "George Orwell"
-                        mrp: 15.99
-                        discounted_price: 12.99
-                        quantity: 50
-                        book_details: "A dystopian novel"
-                        genre: "Science Fiction"
-                        book_image: "http://example.com/1984-cover.jpg"
-                no_books:
-                  summary: Successful response with no books
-                  value:
-                    message: "No books available"
-                    books: []
         "500":
-          description: Internal Server Error - Database or server failure
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -502,221 +440,15 @@ paths:
                   errors:
                     type: string
                     example: "Internal server error occurred while retrieving books"
-              example:
-                errors: "Internal server error occurred while retrieving books"
-
-  /api/v1/wishlists/add:
-    post:
-      summary: Add Book to Wishlist
-      description: Adds a book to the authenticated user's wishlist.
-      tags:
-        - Wishlists
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                wishlist:
-                  type: object
-                  properties:
-                    book_id:
-                      type: integer
-                      example: 456
-                      description: "The ID of the book to add to the wishlist"
-                  required:
-                    - book_id
-      responses:
-        "201":
-          description: Book successfully added to wishlist
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Book added to wishlist!"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
-        "404":
-          description: User or Book not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    examples:
-                      user_not_found:
-                        value: "User not found"
-                      book_not_found:
-                        value: "Book not found"
-        "422":
-          description: Validation error or book already in wishlist
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Book is already in your wishlist"]
-
-  /api/v1/wishlists/getAll:
-    get:
-      summary: Get All Wishlist Items
-      description: Retrieves all active books in the authenticated user's wishlist.
-      tags:
-        - Wishlists
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-      responses:
-        "200":
-          description: Wishlist retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        book_id:
-                          type: integer
-                          example: 456
-                        book_name:
-                          type: string
-                          example: "Test Book"
-              examples:
-                with_items:
-                  summary: Wishlist with items
-                  value:
-                    message:
-                      - book_id: 456
-                        book_name: "Test Book"
-                empty_wishlist:
-                  summary: Empty wishlist
-                  value:
-                    message: []
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: " ecuInvalid token"
-        "404":
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "User not found"
-
-  /api/v1/wishlists/delete/{book_id}:
-    delete:
-      summary: Remove Book from Wishlist
-      isdiction: Marks a book as deleted in the authenticated user's wishlist.
-      tags:
-        - Wishlists
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        - name: book_id
-          in: path
-          required: true
-          description: The ID of the book to remove from the wishlist
-          schema:
-            type: integer
-            example: 456
-      responses:
-        "200":
-          description: Book successfully removed from wishlist
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Book removed from wishlist!"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
-        "404":
-          description: User not found or book not in wishlist
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    examples:
-                      user_not_found:
-                        value: "User not found"
-                      book_not_found:
-                        value: "Book not found in wishlist"
 
   /api/v1/books/update/{id}:
     patch:
       summary: Update Book
-      description: Updates an existing book with the provided details
+      description: Updates an existing book with the provided details.
       tags:
         - Books
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -739,44 +471,36 @@ paths:
                       type: string
                       example: "The Great Gatsby"
                       minLength: 1
-                      description: "Book title"
                     author:
                       type: string
                       example: "F. Scott Fitzgerald"
                       minLength: 1
-                      description: "Author name"
                     mrp:
                       type: number
                       format: float
                       minimum: 0
                       example: 20.99
-                      description: "Maximum retail price (must be >= 0)"
                     discounted_price:
                       type: number
                       format: float
                       minimum: 0
                       example: 15.99
-                      description: "Discounted price (must be >= 0)"
                     quantity:
                       type: integer
                       minimum: 0
                       example: 100
-                      description: "Stock quantity (must be integer >= 0)"
                     book_details:
                       type: string
                       nullable: true
                       example: "A story of the fabulously wealthy Jay Gatsby"
-                      description: "Additional book details (optional)"
                     genre:
                       type: string
                       nullable: true
                       example: "Fiction"
-                      description: "Book genre (optional)"
                     book_image:
                       type: string
                       nullable: true
                       example: "http://example.com/book-cover.jpg"
-                      description: "URL to book cover image (optional)"
       responses:
         "200":
           description: Book successfully updated
@@ -823,6 +547,16 @@ paths:
                         type: string
                         nullable: true
                         example: "http://example.com/book-cover.jpg"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "422":
           description: Validation error or book not found
           content:
@@ -834,16 +568,12 @@ paths:
                     type: array
                     items:
                       type: string
-                    examples:
-                      not_found:
-                        value: ["Book not found or has been deleted"]
-                      validation_errors:
-                        value: ["Name can't be blank", "Mrp must be greater than or equal to 0"]
+                      example: "Book not found or has been deleted"
 
   /api/v1/books/show/{id}:
     get:
       summary: Get Book by ID
-      description: Retrieves a specific book by its ID, if it exists and is not deleted
+      description: Retrieves a specific book by its ID, if it exists and is not deleted.
       tags:
         - Books
       parameters:
@@ -910,15 +640,15 @@ paths:
                   errors:
                     type: string
                     example: "Book not found or has been deleted"
-              example:
-                errors: "Book not found or has been deleted"
 
   /api/v1/books/toggle_delete/{id}:
     patch:
       summary: Toggle Delete Status of a Book
-      description: Toggles the delete status of a book (marks as deleted or restores it) by its ID
+      description: Toggles the delete status of a book (marks as deleted or restores it) by its ID.
       tags:
         - Books
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -976,37 +706,16 @@ paths:
                       is_deleted:
                         type: boolean
                         example: true
-              examples:
-                marked_as_deleted:
-                  summary: Book marked as deleted
-                  value:
-                    message: "Book marked as deleted"
-                    book:
-                      id: 1
-                      name: "The Great Gatsby"
-                      author: "F. Scott Fitzgerald"
-                      mrp: 20.99
-                      discounted_price: 15.99
-                      quantity: 100
-                      book_details: "A story of the fabulously wealthy Jay Gatsby"
-                      genre: "Fiction"
-                      book_image: "http://example.com/book-cover.jpg"
-                      is_deleted: true
-                restored:
-                  summary: Book restored
-                  value:
-                    message: "Book restored"
-                    book:
-                      id: 1
-                      name: "The Great Gatsby"
-                      author: "F. Scott Fitzgerald"
-                      mrp: 20.99
-                      discounted_price: 15.99
-                      quantity: 100
-                      book_details: "A story of the fabulously wealthy Jay Gatsby"
-                      genre: "Fiction"
-                      book_image: "http://example.com/book-cover.jpg"
-                      is_deleted: false
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "422":
           description: Book not found or update failed due to validation errors
           content:
@@ -1015,27 +724,17 @@ paths:
                 type: object
                 properties:
                   errors:
-                    oneOf:
-                      - type: string
-                      - type: array
-                        items:
-                          type: string
-              examples:
-                not_found:
-                  summary: Book not found
-                  value:
-                    errors: "Book not found"
-                validation_error:
-                  summary: Validation error
-                  value:
-                    errors: ["Some validation error"]
+                    type: string
+                    example: "Book not found"
 
   /api/v1/books/{id}:
     delete:
       summary: Hard Delete a Book
-      description: Permanently deletes a book by its ID from the database
+      description: Permanently deletes a book by its ID from the database.
       tags:
         - Books
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1055,8 +754,16 @@ paths:
                   message:
                     type: string
                     example: "Book permanently deleted"
-              example:
-                message: "Book permanently deleted"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Book not found
           content:
@@ -1067,8 +774,169 @@ paths:
                   errors:
                     type: string
                     example: "Book not found"
-              example:
-                errors: "Book not found"
+
+  /api/v1/wishlists/add:
+    post:
+      summary: Add Book to Wishlist
+      description: Adds a book to the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wishlist:
+                  type: object
+                  properties:
+                    book_id:
+                      type: integer
+                      example: 456
+                  required:
+                    - book_id
+      responses:
+        "201":
+          description: Book successfully added to wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to wishlist!"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: User or Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Book not found"
+        "422":
+          description: Validation error or book already in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Book is already in your wishlist"
+
+  /api/v1/wishlists/getAll:
+    get:
+      summary: Get All Wishlist Items
+      description: Retrieves all active books in the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Wishlist retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        book_id:
+                          type: integer
+                          example: 456
+                        book_name:
+                          type: string
+                          example: "Test Book"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+
+  /api/v1/wishlists/delete/{book_id}:
+    delete:
+      summary: Remove Book from Wishlist
+      description: Marks a book as deleted in the authenticated user's wishlist.
+      tags:
+        - Wishlists
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          description: The ID of the book to remove from the wishlist
+          schema:
+            type: integer
+            example: 456
+      responses:
+        "200":
+          description: Book successfully removed from wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book removed from wishlist!"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: User not found or book not in wishlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found in wishlist"
 
   /api/v1/reviews/add:
     post:
@@ -1134,6 +1002,16 @@ paths:
                       comment:
                         type: string
                         example: "Great book! Highly recommend."
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "422":
           description: Validation error (unprocessable entity)
           content:
@@ -1145,7 +1023,7 @@ paths:
                     type: array
                     items:
                       type: string
-                      example: "Rating can't be blank"   
+                      example: "Rating can't be blank"
 
   /api/v1/reviews/{book_id}:
     get:
@@ -1194,6 +1072,14 @@ paths:
                           example: "Great book! Highly recommend."
         "404":
           description: Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Book not found"
 
   /api/v1/reviews/{id}:
     delete:
@@ -1222,6 +1108,16 @@ paths:
                   message:
                     type: string
                     example: "Review deleted successfully"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Review not found
           content:
@@ -1233,6 +1129,221 @@ paths:
                     type: string
                     example: "Review not found"
 
+  /api/v1/carts/add:
+    post:
+      summary: Add Book to Cart
+      description: Adds a book to the authenticated user's cart. If the book already exists in the cart, the quantity is updated.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 1
+                    book_id:
+                      type: integer
+                      example: 456
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      example: 2
+                  required:
+                    - user_id
+                    - book_id
+                    - quantity
+      responses:
+        "201":
+          description: Book successfully added to or updated in the cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to cart"
+                  cart:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 2
+                      is_deleted:
+                        type: boolean
+                        example: false
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid token"
+        "422":
+          description: Validation error (unprocessable entity)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Quantity must be greater than 0"
+
+  /api/v1/carts:
+    get:
+      summary: Get User Cart
+      description: Retrieves all active items in the authenticated user's cart, including book details and quantities.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Cart retrieved successfully (returns array even if empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart retrieved successfully"
+                  cart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cart_id:
+                          type: integer
+                          example: 1
+                        book_id:
+                          type: integer
+                          example: 456
+                        book_name:
+                          type: string
+                          example: "Ruby on Rails Guide"
+                        quantity:
+                          type: integer
+                          example: 2
+                        price:
+                          type: number
+                          format: float
+                          example: 800.0
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid token"
+        "422":
+          description: Validation error or error retrieving cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Error retrieving cart: Database error"
+
+  /api/v1/carts/remove_book/{id}:
+    delete:
+      summary: Soft Delete a Book from Cart
+      description: Soft deletes a book from the cart by marking it as deleted with a timestamp, keeping it in the database.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the cart item to soft delete
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book soft deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book soft deleted successfully"
+                  cart:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 2
+                      is_deleted:
+                        type: boolean
+                        example: true
+                      deleted_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
+        "422":
+          description: Cart item not found or error during soft deletion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Cart item not found"
+
   /api/v1/addresses/list:
     get:
       summary: List Addresses
@@ -1241,14 +1352,6 @@ paths:
         - Addresses
       security:
         - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       responses:
         "200":
           description: Addresses retrieved successfully
@@ -1287,23 +1390,6 @@ paths:
                         is_default:
                           type: boolean
                           example: false
-              examples:
-                with_addresses:
-                  summary: Successful response with addresses
-                  value:
-                    addresses:
-                      - id: 1
-                        street: "123 Main St"
-                        city: "Delhi"
-                        state: "DL"
-                        zip_code: "110001"
-                        country: "India"
-                        type: "home"
-                        is_default: false
-                no_addresses:
-                  summary: Successful response with no addresses
-                  value:
-                    addresses: []
         "401":
           description: Unauthorized - Token missing or invalid
           content:
@@ -1323,14 +1409,6 @@ paths:
         - Addresses
       security:
         - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       requestBody:
         required: true
         content:
@@ -1429,11 +1507,7 @@ paths:
                     type: array
                     items:
                       type: string
-                    examples:
-                      missing_fields:
-                        value: ["Street can't be blank", "City can't be blank"]
-                      invalid_type:
-                        value: ["Type is not included in the list"]
+                      example: "Street can't be blank"
 
   /api/v1/addresses/update/{id}:
     patch:
@@ -1444,13 +1518,6 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: id
           in: path
           required: true
@@ -1560,11 +1627,7 @@ paths:
                     type: array
                     items:
                       type: string
-                    examples:
-                      validation_errors:
-                        value: ["Street can't be blank"]
-                      invalid_type:
-                        value: ["Type is not included in the list"]
+                      example: "Street can't be blank"
 
   /api/v1/addresses/remove/{id}:
     delete:
@@ -1575,13 +1638,6 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: id
           in: path
           required: true
