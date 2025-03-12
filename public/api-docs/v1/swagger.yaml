@@ -604,7 +604,7 @@ paths:
                 no_suggestions:
                   summary: Successful response with no suggestions
                   value:
-                    message: "Search suggestions retrieved.xsd successfully"
+                    message: "Search suggestions retrieved successfully"
                     suggestions: []
         "422":
           description: Validation error (query missing or error retrieving suggestions)
@@ -736,16 +736,16 @@ paths:
                         book_id:
                           type: integer
                           example: 456
-                        book_name:
-                          type: string
-                          example: "Test Book"
+                        user_id:
+                          type: integer
+                          example: 12
               examples:
                 with_items:
                   summary: Wishlist with items
                   value:
                     message:
                       - book_id: 456
-                        book_name: "Test Book"
+                        user_id: 12
                 empty_wishlist:
                   summary: Empty wishlist
                   value:
@@ -771,7 +771,7 @@ paths:
                     type: string
                     example: "User not found"
 
-  /api/v1/wishlists/delete/{book_id}:
+  /api/v1/wishlists/destroy/{book_id}:
     delete:
       summary: Remove Book from Wishlist
       description: Marks a book as deleted in the authenticated user's wishlist.
@@ -1313,6 +1313,14 @@ paths:
                           example: "Great book! Highly recommend."
         "404":
           description: Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Book not found"
 
   /api/v1/reviews/{id}:
     delete:
@@ -1813,10 +1821,6 @@ paths:
                         type: number
                         format: float
                         example: 599.98
-                      status:at_purchase:
-                        type: number
-                        format: float
-                        example: 299.99
                       status:
                         type: string
                         example: "pending"
@@ -1829,7 +1833,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Invalid token"
+                    example: "Unauthorized"
         "404":
           description: Not Found - User, Book, or Address not found
           content:
@@ -1848,8 +1852,137 @@ paths:
                 type: object
                 properties:
                   errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Quantity must be greater than 0"]
+
+  /api/v1/carts/add:
+    post:
+      summary: Add Book to Cart
+      description: Adds a book to the authenticated user's cart. If the book already exists in the cart and is not deleted, the quantity is updated. Requires authentication via Bearer token.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 1
+                      description: The ID of the user adding the book to the cart
+                    book_id:
+                      type: integer
+                      example: 456
+                      description: The ID of the book to add to the cart
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      example: 2
+                      description: The quantity of the book to add
+                  required:
+                    - user_id
+                    - book_id
+                    - quantity
+      responses:
+        "200":
+          description: Book successfully added to or updated in the cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
                     type: string
-                    example: "Invalid quantity"
+                    example: "Book added to cart"
+                  cart:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 2
+                      is_deleted:
+                        type: boolean
+                        example: false
+              examples:
+                new_book:
+                  summary: New book added to cart
+                  value:
+                    message: "Book added to cart"
+                    cart:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 2
+                      is_deleted: false
+                updated_quantity:
+                  summary: Existing book quantity updated
+                  value:
+                    message: "Book quantity updated in cart"
+                    cart:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 5
+                      is_deleted: false
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+        "422":
+          description: Validation error (e.g., invalid quantity or database errors)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Quantity must be greater than 0"]
+              examples:
+                invalid_quantity:
+                  summary: Invalid quantity provided
+                  value:
+                    errors: ["Invalid quantity"]
+                db_error:
+                  summary: Database validation error
+                  value:
+                    errors: ["User must exist", "Book must exist"]
 
   /api/v1/orders:
     get:
@@ -1875,6 +2008,9 @@ paths:
               schema:
                 type: object
                 properties:
+                  success:
+                    type: boolean
+                    example: true
                   orders:
                     type: array
                     items:
@@ -1907,6 +2043,7 @@ paths:
                 with_orders:
                   summary: Successful response with orders
                   value:
+                    success: true
                     orders:
                       - id: 101
                         book_id: 1
@@ -1925,6 +2062,7 @@ paths:
                 no_orders:
                   summary: Successful response with no orders
                   value:
+                    success: true
                     orders: []
         "401":
           description: Unauthorized - Invalid token
@@ -1935,21 +2073,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Invalid token"
-              example:
-                error: "Invalid token"
-        "404":
-          description: Not Found - User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "User not found"
-              example:
-                error: "User not found"
+                    example: "Unauthorized"
         "422":
           description: Unprocessable Entity - No orders found or other errors
           content:
@@ -1960,8 +2084,106 @@ paths:
                   errors:
                     type: string
                     example: "No orders found"
-              example:
-                errors: "No orders found"
+
+  /api/v1/carts/{user_id}:
+    get:
+      summary: Get User Cart
+      description: Retrieves all active items (not soft-deleted) in the specified user's cart, including book details and quantities. Requires authentication via Bearer token.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The ID of the user whose cart is being retrieved
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Cart retrieved successfully (returns array even if empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Cart retrieved successfully"
+                  cart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cart_id:
+                          type: integer
+                          example: 1
+                        book_id:
+                          type: integer
+                          example: 456
+                        book_name:
+                          type: string
+                          example: "Ruby on Rails Guide"
+                        quantity:
+                          type: integer
+                          example: 2
+                        price:
+                          type: number
+                          format: float
+                          example: 800.0
+              examples:
+                with_items:
+                  summary: Cart with items
+                  value:
+                    success: true
+                    message: "Cart retrieved successfully"
+                    cart:
+                      - cart_id: 1
+                        book_id: 456
+                        book_name: "Ruby on Rails Guide"
+                        quantity: 2
+                        price: 800.0
+                empty_cart:
+                  summary: Empty cart
+                  value:
+                    success: true
+                    message: "Cart is empty"
+                    cart: []
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+        "422":
+          description: Error retrieving cart (e.g., database error)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Error retrieving cart: Database connection failed"
 
   /api/v1/orders/{id}:
     get:
@@ -2064,8 +2286,6 @@ paths:
                       type: string
                     example: ["Unexpected error occurred"]
 
-
-
   /api/v1/orders/update_status/{id}:
     patch:
       summary: Update Order Status
@@ -2082,15 +2302,15 @@ paths:
           schema:
             type: string
             example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           description: The ID of the order to update
           schema:
             type: integer
             example: 101
-        - name: status
-          in: query
+        - in: query
+          name: status
           required: true
           description: The new status for the order
           schema:
@@ -2144,7 +2364,7 @@ paths:
                         format: date-time
                         example: "2025-03-10T12:00:00Z"
         "401":
-          description: Unauthorized - Invalid token
+          description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
@@ -2177,3 +2397,104 @@ paths:
                     items:
                       type: string
                     example: ["Status must be a valid status"]
+
+  /api/v1/remove_book/{id}:
+    delete:
+      summary: Remove Book from Cart
+      description: Decreases the quantity of a book in the authenticated user's cart by 1. If the quantity reaches 0, the cart item is soft-deleted (sets `is_deleted` to true). Requires authentication via Bearer token.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The ID of the book to remove (decreases quantity or soft-deletes from the cart)
+          schema:
+            type: integer
+            example: 456
+      responses:
+        "200":
+          description: Cart item updated (quantity decreased or soft-deleted)
+          content:
+            application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Book quantity decreased in cart"
+                book:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    user_id:
+                      type: integer
+                      example: 1
+                    book_id:
+                      type: integer
+                      example: 456
+                    quantity:
+                      type: integer
+                      example: 2
+                    is_deleted:
+                      type: boolean
+                      example: false
+              examples:
+                quantity_decreased:
+                  summary: Quantity decreased
+                  value:
+                    message: "Book quantity decreased in cart"
+                    book:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 2
+                      is_deleted: false
+                soft_deleted:
+                  summary: Item soft-deleted (quantity was 1)
+                  value:
+                    message: "Book removed from cart"
+                    book:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 1
+                      is_deleted: true
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Cart item not found for the given book ID and user, or already deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Cart item not found"
+        "422":
+          description: Error during update (e.g., database validation errors)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Failed to update cart item"]

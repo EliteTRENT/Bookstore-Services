@@ -9,4 +9,11 @@ class Book < ApplicationRecord
   has_many :reviews, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :ordered_users, through: :orders, source: :user
+
+  scope :active, -> { where(is_deleted: false) }  # ✅ Filter active books
+  scope :deleted, -> { where(is_deleted: true) }  # ✅ Filter deleted books
+
+  def soft_delete
+    update(is_deleted: true)  # ✅ Use is_deleted instead of deleted_at
+  end
 end

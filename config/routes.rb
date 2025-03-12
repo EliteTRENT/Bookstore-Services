@@ -25,7 +25,6 @@ Rails.application.routes.draw do
       get "reviews/:book_id" => "reviews#get_reviews"
       delete "reviews/:id" => "reviews#delete_review"
 
-      # New Address routes
       post "addresses/add" => "addresses#create"
       get "addresses/list" => "addresses#index"
       patch "addresses/update/:id" => "addresses#update"
@@ -35,6 +34,10 @@ Rails.application.routes.draw do
       get "orders" => "orders#index"
       get "orders/:id" => "orders#show"
       patch "orders/update_status/:id" => "orders#update_status"
+      
+      post "carts/add" => "carts#add_book"
+      get "carts/:user_id" => "carts#get_cart"
+      delete "remove_book/:id" => "carts#soft_delete_book"
     end
   end
 end

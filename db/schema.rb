@@ -42,6 +42,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_10_161543) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "carts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "book_id", null: false
+    t.integer "quantity", default: 1, null: false
+    t.boolean "is_deleted", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_id"], name: "index_carts_on_book_id"
+    t.index ["user_id"], name: "index_carts_on_user_id"
+  end
+
   create_table "orders", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "book_id", null: false
@@ -88,6 +99,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_10_161543) do
   end
 
   add_foreign_key "addresses", "users"
+  add_foreign_key "carts", "books"
+  add_foreign_key "carts", "users"
   add_foreign_key "orders", "addresses"
   add_foreign_key "orders", "books"
   add_foreign_key "orders", "users"

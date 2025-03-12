@@ -79,3 +79,4 @@ gem 'rswag-ui'   # For Swagger UI
 gem "kaminari"
 
 gem "redis"
+gem "rack-cors"
