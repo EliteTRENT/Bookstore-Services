@@ -65,7 +65,7 @@ end
 gem "jwt"
 gem "dotenv-rails"
 gem "rswag"
-gem "rspec-rails"
+# gem "rspec-rails"
 gem "bunny"
 gem "timecop"
 group :development, :test do
@@ -75,3 +75,7 @@ end
 
 gem 'rswag-api'  # For Swagger generation
 gem 'rswag-ui'   # For Swagger UI
+
+gem "kaminari"
+
+gem "redis"

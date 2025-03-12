@@ -1,5 +1,6 @@
 class Api::V1::BooksController < ApplicationController
   skip_before_action :verify_authenticity_token
+
   def create
     result = BookService.create_book(book_params)
     if result[:success]
@@ -19,9 +20,16 @@ class Api::V1::BooksController < ApplicationController
   end
 
   def index
-    result = BookService.get_all_books
+    page = params[:page]&.to_i || 1
+    per_page = params[:per_page]&.to_i || 10
+
+    result = BookService.get_all_books(page, per_page)
     if result[:success]
-      render json: { message: result[:message], books: result[:books] }, status: :ok
+      render json: {
+        message: result[:message],
+        books: result[:books],
+        pagination: result[:pagination]
+      }, status: :ok
     else
       render json: { errors: result[:error] }, status: :internal_server_error
     end
@@ -51,6 +59,20 @@ class Api::V1::BooksController < ApplicationController
       render json: { message: result[:message] }, status: :ok
     else
       render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
+  def search_suggestions
+    query = params[:query]
+    result = BookService.search_suggestions(query)
+
+    if result[:success]
+      render json: {
+        message: result[:message],
+        suggestions: result[:suggestions]
+      }, status: :ok
+    else
+      render json: { errors: result[:error] }, status: :unprocessable_entity
     end
   end
 

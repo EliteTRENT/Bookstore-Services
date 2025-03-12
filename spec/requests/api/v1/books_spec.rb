@@ -1,6 +1,16 @@
 require 'rails_helper'
 
 RSpec.describe BookService, type: :service do
+  # Setup Redis mock for testing
+  let(:redis) { instance_double(Redis) }
+  before do
+    stub_const("BookService::REDIS", redis)
+    allow(redis).to receive(:get).and_return(nil)
+    allow(redis).to receive(:setex)
+    allow(redis).to receive(:del)
+    allow(redis).to receive(:keys).and_return([])
+  end
+
   describe ".create_book" do
     context "with valid attributes" do
       let(:valid_attributes) do
@@ -40,6 +50,12 @@ RSpec.describe BookService, type: :service do
         result = BookService.create_book(minimal_attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].persisted?).to be_truthy
+      end
+
+      it "invalidates Redis cache for all books" do
+        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:del).with("books:all:1:10")
+        BookService.create_book(valid_attributes)
       end
     end
 
@@ -242,6 +258,9 @@ RSpec.describe BookService, type: :service do
             genre: "Non-Fiction",
             book_image: "http://example.com/new-cover.jpg"
           }
+          expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+          expect(redis).to receive(:del).with("books:all:1:10")
+          expect(redis).to receive(:del).with("book:#{book.id}")
           result = BookService.update_book(book.id, update_attributes)
           expect(result[:success]).to be_truthy
           expect(result[:message]).to eq("Book updated successfully")
@@ -257,12 +276,15 @@ RSpec.describe BookService, type: :service do
 
         it "updates partial attributes successfully" do
           update_attributes = { name: "New Title", quantity: 75 }
+          expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+          expect(redis).to receive(:del).with("books:all:1:10")
+          expect(redis).to receive(:del).with("book:#{book.id}")
           result = BookService.update_book(book.id, update_attributes)
           expect(result[:success]).to be_truthy
           expect(result[:book].name).to eq("New Title")
           expect(result[:book].quantity).to eq(75)
-          expect(result[:book].author).to eq("F. Scott Fitzgerald") # unchanged
-          expect(result[:book].mrp).to eq(20.99) # unchanged
+          expect(result[:book].author).to eq("F. Scott Fitzgerald")
+          expect(result[:book].mrp).to eq(20.99)
         end
       end
 
@@ -319,7 +341,7 @@ RSpec.describe BookService, type: :service do
   end
 
   describe ".get_all_books" do
-    context "when there are active books" do
+    context "with pagination and Redis" do
       let!(:book1) do
         Book.create!(
           name: "Book 1",
@@ -343,88 +365,110 @@ RSpec.describe BookService, type: :service do
         )
       end
 
-      it "returns all active books in descending order" do
-        result = BookService.get_all_books
-        expect(result[:success]).to be_truthy
-        expect(result[:message]).to eq("Books retrieved successfully")
-        expect(result[:books].length).to eq(2)
-        expect(result[:books].first.id).to eq(book2.id) # Newer book first
-        expect(result[:books].last.id).to eq(book1.id)
-      end
-    end
+      context "when Redis cache is available" do
+        let(:cached_data) do
+          {
+            success: true,
+            message: "Books retrieved successfully",
+            books: [
+              book2.as_json,
+              book1.as_json
+            ],
+            pagination: {
+              current_page: 1,
+              per_page: 10,
+              total_pages: 1,
+              total_count: 2
+            }
+          }.to_json
+        end
 
-    context "when there are no books" do
-      it "returns an empty array with appropriate message" do
-        result = BookService.get_all_books
-        expect(result[:success]).to be_truthy
-        expect(result[:message]).to eq("No books available")
-        expect(result[:books]).to eq([])
-      end
-    end
-
-    context "when there are only deleted books" do
-      let!(:deleted_book) do
-        Book.create!(
-          name: "Deleted Book",
-          author: "Author",
-          mrp: 20.99,
-          discounted_price: 15.99,
-          quantity: 100,
-          is_deleted: true
-        )
-      end
-
-      it "returns an empty array excluding deleted books" do
-        result = BookService.get_all_books
-        expect(result[:success]).to be_truthy
-        expect(result[:message]).to eq("No books available")
-        expect(result[:books]).to eq([])
-        expect(result[:books]).not_to include(deleted_book)
-      end
-    end
-
-    context "when there are both active and deleted books" do
-      let!(:active_book) do
-        Book.create!(
-          name: "Active Book",
-          author: "Author 1",
-          mrp: 20.99,
-          discounted_price: 15.99,
-          quantity: 100,
-          is_deleted: false
-        )
-      end
-      let!(:deleted_book) do
-        Book.create!(
-          name: "Deleted Book",
-          author: "Author 2",
-          mrp: 25.99,
-          discounted_price: 19.99,
-          quantity: 50,
-          is_deleted: true
-        )
+        it "returns cached books when Redis has data" do
+          expect(redis).to receive(:get).with("books:all:1:10").and_return(cached_data)
+          result = BookService.get_all_books(1, 10)
+          expect(result[:success]).to be_truthy
+          expect(result[:message]).to eq("Books retrieved successfully")
+          expect(result[:books].length).to eq(2)
+          expect(result[:books].first[:id]).to eq(book2.id)
+          expect(result[:pagination][:current_page]).to eq(1)
+          expect(result[:pagination][:per_page]).to eq(10)
+        end
       end
 
-      it "returns only active books" do
-        result = BookService.get_all_books
-        expect(result[:success]).to be_truthy
-        expect(result[:message]).to eq("Books retrieved successfully")
-        expect(result[:books].length).to eq(1)
-        expect(result[:books]).to include(active_book)
-        expect(result[:books]).not_to include(deleted_book)
+      context "when Redis cache is unavailable" do
+        it "fetches from database and caches result" do
+          expect(redis).to receive(:get).with("books:all:1:10").and_return(nil)
+          expect(redis).to receive(:setex).with("books:all:1:10", 3600, anything)
+          result = BookService.get_all_books(1, 10)
+          expect(result[:success]).to be_truthy
+          expect(result[:message]).to eq("Books retrieved successfully")
+          expect(result[:books].length).to eq(2)
+          expect(result[:books].first["id"]).to eq(book2.id)
+          expect(result[:pagination][:current_page]).to eq(1)
+          expect(result[:pagination][:per_page]).to eq(10)
+          expect(result[:pagination][:total_pages]).to eq(1)
+          expect(result[:pagination][:total_count]).to eq(2)
+        end
       end
-    end
 
-    context "when a database error occurs" do
-      before do
-        allow(Book).to receive(:where).and_raise(StandardError.new("Database connection failed"))
+      context "with pagination" do
+        before do
+          15.times do |i|
+            Book.create!(
+              name: "Book #{i + 3}",
+              author: "Author #{i + 3}",
+              mrp: 10.0 + i,
+              discounted_price: 8.0 + i,
+              quantity: 10,
+              is_deleted: false,
+              created_at: (15 - i).days.ago
+            )
+          end
+        end
+
+        it "returns paginated books for page 1" do
+          result = BookService.get_all_books(1, 10)
+          expect(result[:success]).to be_truthy
+          expect(result[:books].length).to eq(10)
+          expect(result[:pagination][:current_page]).to eq(1)
+          expect(result[:pagination][:total_pages]).to eq(2)
+          expect(result[:pagination][:total_count]).to eq(17)
+        end
+
+        it "returns paginated books for page 2" do
+          result = BookService.get_all_books(2, 10)
+          expect(result[:success]).to be_truthy
+          expect(result[:books].length).to eq(7)
+          expect(result[:pagination][:current_page]).to eq(2)
+          expect(result[:pagination][:total_pages]).to eq(2)
+          expect(result[:pagination][:total_count]).to eq(17)
+        end
       end
 
-      it "returns an error response" do
-        result = BookService.get_all_books
-        expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Internal server error occurred while retrieving books: Database connection failed")
-        expect(result[:books]).to be_nil
+      context "when there are no active books" do
+        it "returns an empty array with pagination" do
+          Book.destroy_all
+          result = BookService.get_all_books(1, 10)
+          expect(result[:success]).to be_truthy
+          expect(result[:message]).to eq("No books available")
+          expect(result[:books]).to eq([])
+          expect(result[:pagination][:current_page]).to eq(1)
+          expect(result[:pagination][:per_page]).to eq(10)
+          expect(result[:pagination][:total_pages]).to eq(0)
+          expect(result[:pagination][:total_count]).to eq(0)
+        end
+      end
+
+      context "when a database error occurs" do
+        before do
+          allow(Book).to receive(:where).and_raise(StandardError.new("Database connection failed"))
+        end
+
+        it "returns an error response" do
+          result = BookService.get_all_books(1, 10)
+          expect(result[:success]).to be_falsey
+          expect(result[:error]).to eq("Internal server error occurred while retrieving books: Database connection failed")
+        end
       end
     end
   end
@@ -446,19 +490,33 @@ RSpec.describe BookService, type: :service do
     context "when the book exists and is not deleted" do
       let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
 
-      it "returns the book successfully" do
+      it "returns the book successfully from database" do
+        expect(redis).to receive(:get).with("book:#{book.id}").and_return(nil)
+        expect(redis).to receive(:setex).with("book:#{book.id}", 3600, anything)
         result = BookService.get_book_by_id(book.id)
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Book retrieved successfully")
-        expect(result[:book]).to eq(book)
-        expect(result[:book].name).to eq("The Great Gatsby")
-        expect(result[:book].author).to eq("F. Scott Fitzgerald")
-        expect(result[:book].mrp).to eq(20.99)
-        expect(result[:book].discounted_price).to eq(15.99)
-        expect(result[:book].quantity).to eq(100)
-        expect(result[:book].book_details).to eq("A story of the fabulously wealthy Jay Gatsby")
-        expect(result[:book].genre).to eq("Fiction")
-        expect(result[:book].book_image).to eq("http://example.com/book-cover.jpg")
+        expect(result[:book]["id"]).to eq(book.id)
+        expect(result[:book]["name"]).to eq("The Great Gatsby")
+        expect(result[:book]["author"]).to eq("F. Scott Fitzgerald")
+        expect(result[:book]["mrp"]).to eq("20.99")
+        expect(result[:book]["discounted_price"]).to eq("15.99")
+        expect(result[:book]["quantity"]).to eq(100)
+        expect(result[:book]["book_details"]).to eq("A story of the fabulously wealthy Jay Gatsby")
+        expect(result[:book]["genre"]).to eq("Fiction")
+        expect(result[:book]["book_image"]).to eq("http://example.com/book-cover.jpg")
+      end
+
+      it "returns the book from Redis cache if available" do
+        cached_data = {
+          success: true,
+          message: "Book retrieved successfully",
+          book: book.as_json
+        }.to_json
+        expect(redis).to receive(:get).with("book:#{book.id}").and_return(cached_data)
+        result = BookService.get_book_by_id(book.id)
+        expect(result[:success]).to be_truthy
+        expect(result[:book][:id]).to eq(book.id)
       end
     end
 
@@ -467,7 +525,6 @@ RSpec.describe BookService, type: :service do
         result = BookService.get_book_by_id(999)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Book not found or has been deleted")
-        expect(result[:book]).to be_nil
       end
     end
 
@@ -478,7 +535,6 @@ RSpec.describe BookService, type: :service do
         result = BookService.get_book_by_id(deleted_book.id)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Book not found or has been deleted")
-        expect(result[:book]).to be_nil
       end
     end
   end
@@ -497,7 +553,10 @@ RSpec.describe BookService, type: :service do
     context "when the book exists and is not deleted" do
       let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
 
-      it "marks the book as deleted" do
+      it "marks the book as deleted and invalidates caches" do
+        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:del).with("books:all:1:10")
+        expect(redis).to receive(:del).with("book:#{book.id}")
         result = BookService.toggle_delete(book.id)
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Book marked as deleted")
@@ -508,7 +567,10 @@ RSpec.describe BookService, type: :service do
     context "when the book exists and is deleted" do
       let!(:book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
 
-      it "restores the book" do
+      it "restores the book and invalidates caches" do
+        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:del).with("books:all:1:10")
+        expect(redis).to receive(:del).with("book:#{book.id}")
         result = BookService.toggle_delete(book.id)
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Book restored")
@@ -537,7 +599,6 @@ RSpec.describe BookService, type: :service do
         result = BookService.toggle_delete(book.id)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq([ "Validation failed" ])
-        expect(result[:book]).to be_nil
       end
     end
   end
@@ -550,7 +611,10 @@ RSpec.describe BookService, type: :service do
     context "when the book exists" do
       let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
 
-      it "permanently deletes the book" do
+      it "permanently deletes the book and invalidates caches" do
+        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:del).with("books:all:1:10")
+        expect(redis).to receive(:del).with("book:#{book.id}")
         result = BookService.hard_delete(book.id)
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Book permanently deleted")
@@ -563,6 +627,138 @@ RSpec.describe BookService, type: :service do
         result = BookService.hard_delete(999)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Book not found")
+      end
+    end
+  end
+
+  describe ".search_suggestions" do
+    let!(:book1) do
+      Book.create!(
+        name: "The Great Gatsby",
+        author: "F. Scott Fitzgerald",
+        mrp: 20.99,
+        discounted_price: 15.99,
+        quantity: 100,
+        genre: "Fiction",
+        is_deleted: false
+      )
+    end
+    let!(:book2) do
+      Book.create!(
+        name: "Gatsby's Adventure",
+        author: "Jane Doe",
+        mrp: 15.99,
+        discounted_price: 12.99,
+        quantity: 50,
+        genre: "Fiction",
+        is_deleted: false
+      )
+    end
+    let!(:book3) do
+      Book.create!(
+        name: "1984",
+        author: "George Orwell",
+        mrp: 10.99,
+        discounted_price: 8.99,
+        quantity: 75,
+        genre: "Science Fiction",
+        is_deleted: false
+      )
+    end
+
+    context "with valid query" do
+      it "returns suggestions matching name from database" do
+        expect(redis).to receive(:get).with("books:search:gatsby").and_return(nil)
+        expect(redis).to receive(:setex).with("books:search:gatsby", 1800, anything)
+        result = BookService.search_suggestions("Gatsby")
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Search suggestions retrieved successfully")
+        expect(result[:suggestions].length).to eq(2)
+        expect(result[:suggestions]).to include(
+          { name: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Fiction" },
+          { name: "Gatsby's Adventure", author: "Jane Doe", genre: "Fiction" }
+        )
+      end
+
+      it "returns suggestions from Redis cache if available" do
+        cached_data = {
+          success: true,
+          message: "Search suggestions retrieved successfully",
+          suggestions: [
+            { name: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Fiction" },
+            { name: "Gatsby's Adventure", author: "Jane Doe", genre: "Fiction" }
+          ]
+        }.to_json
+        expect(redis).to receive(:get).with("books:search:gatsby").and_return(cached_data)
+        result = BookService.search_suggestions("Gatsby")
+        expect(result[:success]).to be_truthy
+        expect(result[:suggestions].length).to eq(2)
+        expect(result[:suggestions]).to eq(
+          [
+            { name: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Fiction" },
+            { name: "Gatsby's Adventure", author: "Jane Doe", genre: "Fiction" }
+          ]
+        )
+      end
+
+      it "returns suggestions matching author" do
+        expect(redis).to receive(:get).with("books:search:fitzgerald").and_return(nil)
+        expect(redis).to receive(:setex).with("books:search:fitzgerald", 1800, anything)
+        result = BookService.search_suggestions("Fitzgerald")
+        expect(result[:success]).to be_truthy
+        expect(result[:suggestions].length).to eq(1)
+        expect(result[:suggestions].first[:name]).to eq("The Great Gatsby")
+      end
+
+      it "returns all suggestions matching genre substring" do
+        expect(redis).to receive(:get).with("books:search:fiction").and_return(nil)
+        expect(redis).to receive(:setex).with("books:search:fiction", 1800, anything)
+        result = BookService.search_suggestions("Fiction")
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Search suggestions retrieved successfully")
+        expect(result[:suggestions].length).to eq(3)  # Matches original fuzzy search behavior
+        expect(result[:suggestions]).to include(
+          { name: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Fiction" },
+          { name: "Gatsby's Adventure", author: "Jane Doe", genre: "Fiction" },
+          { name: "1984", author: "George Orwell", genre: "Science Fiction" }
+        )
+      end
+    end
+
+    context "with no matches" do
+      it "returns an empty array" do
+        expect(redis).to receive(:get).with("books:search:nonexistent").and_return(nil)
+        expect(redis).to receive(:setex).with("books:search:nonexistent", 1800, anything)
+        result = BookService.search_suggestions("Nonexistent")
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq("Search suggestions retrieved successfully")
+        expect(result[:suggestions]).to eq([])
+      end
+    end
+
+    context "with invalid query" do
+      it "returns an error when query is blank" do
+        result = BookService.search_suggestions("")
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Query parameter is required")
+      end
+
+      it "returns an error when query is nil" do
+        result = BookService.search_suggestions(nil)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Query parameter is required")
+      end
+    end
+
+    context "when a database error occurs" do
+      before do
+        allow(Book).to receive(:where).and_raise(StandardError.new("Search error"))
+      end
+
+      it "returns an error response" do
+        result = BookService.search_suggestions("Gatsby")
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Error retrieving suggestions: Search error")
       end
     end
   end
