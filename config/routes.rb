@@ -34,7 +34,7 @@ Rails.application.routes.draw do
       get "orders" => "orders#index"
       get "orders/:id" => "orders#show"
       patch "orders/update_status/:id" => "orders#update_status"
-      
+
       post "carts/add" => "carts#add_book"
       get "carts/:user_id" => "carts#get_cart"
       delete "remove_book/:id" => "carts#soft_delete_book"
