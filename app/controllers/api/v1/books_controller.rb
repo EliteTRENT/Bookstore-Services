@@ -22,8 +22,9 @@ class Api::V1::BooksController < ApplicationController
   def index
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 10
+    sort_by = params[:sort_by] # Get the sort_by parameter from the request
 
-    result = BookService.get_all_books(page, per_page)
+    result = BookService.get_all_books(page, per_page, sort_by)
     if result[:success]
       render json: {
         message: result[:message],

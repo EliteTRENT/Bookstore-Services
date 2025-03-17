@@ -24,9 +24,9 @@ class BookService
     end
   end
 
-  def self.get_all_books(page = 1, per_page = 10)
-    # Generate a unique cache key based on page and per_page
-    cache_key = "books:all:#{page}:#{per_page}"
+  def self.get_all_books(page = 1, per_page = 10, sort_by = nil)
+    # Generate a unique cache key based on page, per_page, and sort_by
+    cache_key = "books:all:#{page}:#{per_page}:#{sort_by || 'default'}"
 
     # Try to fetch from cache
     cached_result = REDIS.get(cache_key)
@@ -34,20 +34,39 @@ class BookService
       return JSON.parse(cached_result, symbolize_names: true)
     end
 
-    # Fetch from database if cache miss
-    books = Book.where(is_deleted: false)
-                .order(created_at: :desc)
-                .page(page)
-                .per(per_page)
+    # Fetch books with sorting
+    books_query = Book.active
 
-    total_count = Book.where(is_deleted: false).count
+    # Apply sorting based on sort_by parameter
+    case sort_by
+    when 'price-low'
+      books_query = books_query.order(discounted_price: :asc, created_at: :desc)
+    when 'price-high'
+      books_query = books_query.order(discounted_price: :desc, created_at: :desc)
+    else
+      # Default sorting by created_at (relevance)
+      books_query = books_query.order(created_at: :desc)
+    end
+
+    # Apply pagination
+    books = books_query.page(page).per(per_page)
+
+    total_count = Book.active.count
     total_pages = (total_count.to_f / per_page).ceil
+
+    # Include average_rating and total_reviews in the response
+    books_with_reviews = books.map do |book|
+      book.as_json.merge(
+        average_rating: book.average_rating,
+        total_reviews: book.total_reviews
+      )
+    end
 
     result = if books.any?
                {
                  success: true,
                  message: "Books retrieved successfully",
-                 books: books.as_json, # Serialize to JSON-friendly format
+                 books: books_with_reviews,
                  pagination: {
                    current_page: page.to_i,
                    per_page: per_page,
@@ -90,7 +109,11 @@ class BookService
     # Fetch from database if cache miss
     book = Book.find_by(id: book_id, is_deleted: false)
     result = if book
-               { success: true, message: "Book retrieved successfully", book: book.as_json }
+               book_data = book.as_json.merge(
+                 average_rating: book.average_rating,
+                 total_reviews: book.total_reviews
+               )
+               { success: true, message: "Book retrieved successfully", book: book_data }
              else
                { success: false, error: "Book not found or has been deleted" }
              end
@@ -145,12 +168,18 @@ class BookService
     end
 
     # Fetch from database if cache miss
-    suggestions = Book.where(is_deleted: false)
-                     .where("name ILIKE ? OR author ILIKE ? OR genre ILIKE ?",
-                            "%#{query}%", "%#{query}%", "%#{query}%")
-                     .limit(10)
-                     .pluck(:name, :author, :genre)
-                     .map { |name, author, genre| { name: name, author: author, genre: genre } }
+    books = Book.active
+                .where("name ILIKE ? OR author ILIKE ? OR genre ILIKE ?",
+                       "%#{query}%", "%#{query}%", "%#{query}%")
+                .limit(10)
+
+    # Include average_rating and total_reviews in the response
+    suggestions = books.map do |book|
+      book.as_json.merge(
+        average_rating: book.average_rating,
+        total_reviews: book.total_reviews
+      )
+    end
 
     result = {
       success: true,

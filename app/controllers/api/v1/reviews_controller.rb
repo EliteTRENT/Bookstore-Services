@@ -12,7 +12,7 @@ class Api::V1::ReviewsController < ApplicationController
 
   def get_reviews
     result = ReviewService.get_reviews(params[:book_id])
-    render json: { success: true, reviews: result }, status: :ok
+    render json: { success: true, data: result }, status: :ok
   end
 
   def delete_review
@@ -23,7 +23,6 @@ class Api::V1::ReviewsController < ApplicationController
       render json: { errors: result[:error] }, status: :unprocessable_entity
     end
   end
-
 
   private
 
