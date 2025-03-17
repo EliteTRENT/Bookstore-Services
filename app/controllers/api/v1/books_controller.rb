@@ -2,9 +2,19 @@ class Api::V1::BooksController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   def create
-    result = BookService.create_book(book_params)
+    # Check if a file is uploaded (CSV case) or book params are provided (single book case)
+    if params[:books].present?
+      result = BookService.create_book(file: params[:books]) # Pass the uploaded file directly
+    else
+      result = BookService.create_book(book_params) # Use book_params for single book
+    end
+
     if result[:success]
-      render json: { message: result[:message], book: result[:book] }, status: :created
+      if result[:books] # CSV case
+        render json: { message: result[:message], books: result[:books] }, status: :created
+      else # Single book case
+        render json: { message: result[:message], book: result[:book] }, status: :created
+      end
     else
       render json: { errors: result[:error] }, status: :unprocessable_entity
     end
@@ -22,7 +32,7 @@ class Api::V1::BooksController < ApplicationController
   def index
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 10
-    sort_by = params[:sort_by] # Get the sort_by parameter from the request
+    sort_by = params[:sort_by]
 
     result = BookService.get_all_books(page, per_page, sort_by)
     if result[:success]
@@ -80,6 +90,9 @@ class Api::V1::BooksController < ApplicationController
   private
 
   def book_params
-    params.require(:book).permit(:name, :author, :mrp, :discounted_price, :quantity, :book_details, :genre, :book_image)
+    params.require(:book).permit(
+      :name, :author, :mrp, :discounted_price,
+      :quantity, :book_details, :genre, :book_image
+    )
   end
 end
