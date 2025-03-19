@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       post "wishlists/add" => "wishlists#addBook"
       get "wishlists/getAll" => "wishlists#getAll"
       delete "wishlists/destroy/:book_id" => "wishlists#destroy"
+      delete "wishlists/destroyByWishlistId/:wishlist_id" => "wishlists#destroyByWishlistId"
 
       post "books/create" => "books#create"
       patch "books/update/:id" => "books#update"

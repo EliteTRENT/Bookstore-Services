@@ -1,3 +1,4 @@
+# app/models/book.rb
 class Book < ApplicationRecord
   has_many :wishlists
   has_many :wishlist_users, through: :wishlists, source: :user
@@ -14,6 +15,8 @@ class Book < ApplicationRecord
   scope :active, -> { where(is_deleted: false) }  # Filter active books
   scope :deleted, -> { where(is_deleted: true) }  # Filter deleted books
 
+  after_update :mark_wishlists_as_deleted, if: :is_deleted_changed?
+
   def soft_delete
     update(is_deleted: true)  # Use is_deleted instead of deleted_at
   end
@@ -27,5 +30,14 @@ class Book < ApplicationRecord
   # Get the total number of reviews for the book
   def total_reviews
     reviews.count
+  end
+
+  private
+
+  def mark_wishlists_as_deleted
+    if is_deleted?
+      wishlists.where(is_deleted: false).update_all(is_deleted: true)
+      Rails.logger.info("Marked all wishlists for book #{id} as deleted due to book soft deletion.")
+    end
   end
 end
