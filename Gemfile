@@ -75,3 +75,5 @@ gem "kaminari"
 
 gem "redis"
 gem "rack-cors"
+
+gem "csv"

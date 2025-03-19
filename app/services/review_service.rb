@@ -9,7 +9,15 @@ class ReviewService
   end
 
   def self.get_reviews(book_id)
-    Review.where(book_id: book_id)
+    reviews = Review.where(book_id: book_id)
+    total_reviews = reviews.count
+    average_rating = total_reviews > 0 ? (reviews.sum(:rating).to_f / total_reviews).round(1) : 0
+
+    {
+      reviews: reviews,
+      total_reviews: total_reviews,
+      average_rating: average_rating
+    }
   end
 
   def self.delete_review(review_id)
@@ -21,5 +29,4 @@ class ReviewService
       { success: false, error: "Review not found" }
     end
   end
-
 end
