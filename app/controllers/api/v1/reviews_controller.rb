@@ -12,11 +12,12 @@ class Api::V1::ReviewsController < ApplicationController
 
   def get_reviews
     result = ReviewService.get_reviews(params[:book_id])
-    render json: { success: true, data: result }, status: :ok
+    render json: { data: result }, status: :ok
   end
 
   def delete_review
-    result = ReviewService.delete_review(params[:id])
+    user_id = params[:user_id] # Expect user_id from the request (e.g., from frontend auth)
+    result = ReviewService.delete_review(params[:id], user_id)
     if result[:success]
       render json: { message: result[:message] }, status: :ok
     else

@@ -72,7 +72,7 @@ class BookService
       books_query = books_query.order(discounted_price: :desc, created_at: :desc)
     else
       books_query = books_query.order(created_at: :desc)
-    end
+    end 
 
     books = books_query.page(page).per(per_page)
     total_count = Book.active.count
