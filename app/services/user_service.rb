@@ -13,7 +13,7 @@ class UserService
     if user
       if user.authenticate(login_params[:password])
         token = JsonWebToken.encode({ name: user.name, email: user.email })
-        { success: true, message: "Login successful", token: token, user_id: user.id, user_name: user.name }
+        { success: true, message: "Login successful", token: token, user_id: user.id, user_name: user.name, email: user.email, mobile_number: user.mobile_number }
       else
         { success: false, error: "Wrong password" }
       end
