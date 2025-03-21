@@ -39,6 +39,7 @@ Rails.application.routes.draw do
       post "carts/add" => "carts#add_book"
       get "carts/:user_id" => "carts#get_cart"
       delete "remove_book/:id" => "carts#soft_delete_book"
+      patch "carts/update_quantity" => "carts#update_quantity"
     end
   end
 end

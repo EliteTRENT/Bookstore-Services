@@ -30,7 +30,8 @@ class CartService
           book_id: item.book_id,
           book_name: item.book&.name,
           quantity: item.quantity,
-          price: item.book&.discounted_price
+          price: item.book&.discounted_price,
+          image_url: item.book&.book_image
         }
       end
       { success: true, message: "Cart retrieved successfully", cart: cart_data }
@@ -46,23 +47,29 @@ class CartService
     cart_item = Cart.find_by(book_id: book_id, user_id: user_id, is_deleted: false)
     return { success: false, error: "Cart item not found" } unless cart_item
 
-    if cart_item.quantity > 1
-      # Decrease quantity by 1
-      cart_item.quantity -= 1
-      if cart_item.save
-        { success: true, message: "Book quantity decreased in cart", book: cart_item }
-      else
-        { success: false, error: cart_item.errors.full_messages }
-      end
+    # Soft-delete the cart item regardless of quantity
+    if cart_item.update(is_deleted: true)
+      { success: true, message: "Book removed from cart", book: cart_item }
     else
-      # Quantity is 1, so soft-delete the cart item
-      if cart_item.update(is_deleted: true)
-        { success: true, message: "Book removed from cart", book: cart_item }
-      else
-        { success: false, error: cart_item.errors.full_messages }
-      end
+      { success: false, error: cart_item.errors.full_messages }
     end
   rescue StandardError => e
     { success: false, error: "Error updating cart item: #{e.message}" }
+  end
+
+  def self.update_quantity(cart_params, user_id)
+    return { success: false, error: "Invalid quantity" } if cart_params[:quantity].nil? || cart_params[:quantity].to_i <= 0
+
+    cart_item = Cart.find_by(book_id: cart_params[:book_id], user_id: user_id, is_deleted: false)
+    return { success: false, error: "Cart item not found" } unless cart_item
+
+    cart_item.quantity = cart_params[:quantity].to_i
+    if cart_item.save
+      { success: true, message: "Cart quantity updated", cart: cart_item }
+    else
+      { success: false, error: cart_item.errors.full_messages }
+    end
+  rescue StandardError => e
+    { success: false, error: "Error updating cart quantity: #{e.message}" }
   end
 end

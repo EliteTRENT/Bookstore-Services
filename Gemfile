@@ -77,3 +77,5 @@ gem "redis"
 gem "rack-cors"
 
 gem "csv"
+
+gem "sidekiq"
