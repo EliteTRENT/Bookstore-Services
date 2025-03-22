@@ -2,7 +2,9 @@ class ReviewService
   def self.add_review(review_params)
     review = Review.new(review_params)
     if review.save
-      REDIS.del("book:#{review.book_id}") # Clear cache for the book
+      # Clear both individual book cache and all book list caches
+      REDIS.del("book:#{review.book_id}")
+      REDIS.keys("books:all:*").each { |key| REDIS.del(key) }
       { success: true, message: "Review added successfully", review: review.as_json(include: :user) }
     else
       { success: false, error: review.errors.full_messages }
@@ -14,7 +16,7 @@ class ReviewService
       {
         id: review.id,
         user_id: review.user_id,
-        user_name: review.user.name, # Include user name
+        user_name: review.user.name,
         book_id: review.book_id,
         rating: review.rating,
         comment: review.comment,
@@ -35,7 +37,9 @@ class ReviewService
     review = Review.find_by(id: review_id, user_id: user_id)
     if review
       if review.destroy
-        REDIS.del("book:#{review.book_id}") # Clear cache for the book
+        # Clear both individual book cache and all book list caches
+        REDIS.del("book:#{review.book_id}")
+        REDIS.keys("books:all:*").each { |key| REDIS.del(key) }
         { success: true, message: "Review deleted successfully" }
       else
         { success: false, error: review.errors.full_messages }
