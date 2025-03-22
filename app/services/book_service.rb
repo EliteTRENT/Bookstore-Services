@@ -1,5 +1,5 @@
 class BookService
-  require 'csv'  # Required for CSV parsing
+  require "csv"  # Required for CSV parsing
 
   def self.create_book(book_params)
     if book_params[:file].present?
@@ -66,13 +66,13 @@ class BookService
     books_query = Book.active
 
     case sort_by
-    when 'price-low'
+    when "price-low"
       books_query = books_query.order(discounted_price: :asc, created_at: :desc)
-    when 'price-high'
+    when "price-high"
       books_query = books_query.order(discounted_price: :desc, created_at: :desc)
     else
       books_query = books_query.order(created_at: :desc)
-    end 
+    end
 
     books = books_query.page(page).per(per_page)
     total_count = Book.active.count
@@ -97,7 +97,7 @@ class BookService
                    total_count: total_count
                  }
                }
-             else
+    else
                {
                  success: true,
                  message: "No books available",
@@ -109,7 +109,7 @@ class BookService
                    total_count: total_count
                  }
                }
-             end
+    end
 
     REDIS.setex(cache_key, 3600, result.to_json)
     result
@@ -131,9 +131,9 @@ class BookService
                  total_reviews: book.total_reviews
                )
                { success: true, message: "Book retrieved successfully", book: book_data }
-             else
+    else
                { success: false, error: "Book not found or has been deleted" }
-             end
+    end
 
     REDIS.setex(cache_key, 3600, result.to_json) if result[:success]
     result
@@ -199,5 +199,44 @@ class BookService
     result
   rescue StandardError => e
     { success: false, error: "Error retrieving suggestions: #{e.message}" }
+  end
+
+  def self.fetch_stock(book_ids)
+    # Validate input: Ensure book_ids is an array of positive integers
+    unless book_ids.is_a?(Array) && book_ids.all? { |id| id.is_a?(Integer) && id > 0 }
+      return { success: false, error: "Invalid book_ids: must be an array of positive integers" }
+    end
+
+    begin
+      # Fetch books with the given IDs, selecting only the id and quantity columns
+      books = Book.where(id: book_ids).select(:id, :quantity)
+
+      # If no books are found, return an error
+      if books.empty?
+        return { success: false, error: "No books found for the given IDs" }
+      end
+
+      # Check if all requested book IDs were found
+      found_book_ids = books.map(&:id)
+      missing_book_ids = book_ids - found_book_ids
+      unless missing_book_ids.empty?
+        return { success: false, error: "Books not found: #{missing_book_ids.join(', ')}" }
+      end
+
+      # Map the books to the required format: [{ book_id: ..., quantity: ... }, ...]
+      stock_data = books.map do |book|
+        {
+          book_id: book.id,
+          quantity: book.quantity
+        }
+      end
+
+      # Return success response with stock data
+      { success: true, stock: stock_data }
+    rescue StandardError => e
+      # Log the error and return a failure response
+      Rails.logger.error("Error fetching stock for book_ids #{book_ids}: #{e.message}")
+      { success: false, error: "Failed to fetch stock quantities: #{e.message}" }
+    end
   end
 end

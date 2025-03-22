@@ -1,11 +1,11 @@
 class Api::V1::OrdersController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  before_action :authenticate_request
 
   def create
     token = request.headers["Authorization"]&.split(" ")&.last
     result = OrderService.create_order(token, order_params)
     if result[:success]
-      render json: { message: result[:message], order: result[:order] }, status: :created
+      render json: { success: true, message: result[:message], order: result[:order] }, status: :created
     elsif result[:error] == "Invalid token"
       render json: { error: result[:error] }, status: :unauthorized
     elsif result[:error] == "User not found" || result[:error] == "Book not found" || result[:error] == "Invalid address"
@@ -58,6 +58,6 @@ class Api::V1::OrdersController < ApplicationController
   end
 
   def order_params
-    params.require(:order).permit(:book_id, :address_id, :quantity)
+    params.require(:order).permit(:user_id, :book_id, :address_id, :quantity, :price_at_purchase, :total_price)
   end
 end

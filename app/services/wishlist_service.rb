@@ -1,6 +1,7 @@
 class WishlistService
   def self.addBook(token, wishlist_params)
-    token_email = JsonWebToken.decode(token)
+    token_full = JsonWebToken.decode(token)
+    token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email
     user = User.find_by(email: token_email)
     return { success: false, error: "User not found" } unless user
@@ -15,7 +16,8 @@ class WishlistService
   end
 
   def self.getAll(token)
-    token_email = JsonWebToken.decode(token)
+    token_full = JsonWebToken.decode(token)
+    token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email
     user = User.find_by(email: token_email)
     return { success: false, error: "User not found" } unless user
@@ -40,7 +42,8 @@ class WishlistService
   end
 
   def self.destroy(token, book_id)
-    token_email = JsonWebToken.decode(token)
+    token_full = JsonWebToken.decode(token)
+    token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email
     user = User.find_by(email: token_email)
     return { success: false, error: "User not found" } unless user
@@ -54,7 +57,8 @@ class WishlistService
   end
 
   def self.destroyByWishlistId(token, wishlist_id)
-    token_email = JsonWebToken.decode(token)
+    token_full = JsonWebToken.decode(token)
+    token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email
     user = User.find_by(email: token_email)
     return { success: false, error: "User not found" } unless user

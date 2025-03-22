@@ -1,7 +1,7 @@
 module Api
   module V1
     class CartsController < ApplicationController
-      skip_before_action :verify_authenticity_token
+      before_action :authenticate_request
 
       def add_book
         result = CartService.add_book(cart_params)
@@ -19,7 +19,8 @@ module Api
 
       def soft_delete_book
         token = request.headers["Authorization"]&.split(" ")&.last
-        token_email = JsonWebToken.decode(token)
+        token_full = JsonWebToken.decode(token)
+        token_email = token_full["email"]
         user = User.find_by(email: token_email)
         return render json: { error: "User not found" }, status: :unauthorized unless user
 
@@ -37,7 +38,8 @@ module Api
 
       def update_quantity
         token = request.headers["Authorization"]&.split(" ")&.last
-        token_email = JsonWebToken.decode(token)
+        token_full = JsonWebToken.decode(token)
+        token_email = token_full["email"]
         user = User.find_by(email: token_email)
         result = CartService.update_quantity(cart_params, user.id) # Use cart_params
         if result[:success]

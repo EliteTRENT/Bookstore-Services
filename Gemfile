@@ -79,3 +79,5 @@ gem "rack-cors"
 gem "csv"
 
 gem "sidekiq"
+
+gem "google-id-token"

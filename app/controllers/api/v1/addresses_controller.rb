@@ -1,12 +1,15 @@
 module Api
   module V1
     class AddressesController < ApplicationController
-      before_action :authenticate_user_from_token!
-      skip_before_action :verify_authenticity_token
+      before_action :authenticate_request
 
       def index
         result = AddressService.list_addresses(current_user)
-        render json: { addresses: result[:addresses] }, status: :ok
+        user_data = {
+          name: current_user.name,
+          number: current_user.mobile_number  # Or phone, depending on your DB column
+        }
+        render json: { user: user_data, addresses: result[:addresses] }, status: :ok
       end
 
       def create

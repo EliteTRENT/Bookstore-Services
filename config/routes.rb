@@ -21,6 +21,7 @@ Rails.application.routes.draw do
       patch "books/toggle_delete/:id" => "books#toggle_delete"
       delete "books/:id" => "books#destroy"
       get "books/search_suggestions" => "books#search_suggestions"
+      get "books/stock" => "books#stock"
 
       post "reviews/add" => "reviews#add_review"
       get "reviews/:book_id" => "reviews#get_reviews"
@@ -40,6 +41,10 @@ Rails.application.routes.draw do
       get "carts/:user_id" => "carts#get_cart"
       delete "remove_book/:id" => "carts#soft_delete_book"
       patch "carts/update_quantity" => "carts#update_quantity"
+
+      # Facebook and Google SignUp
+      post "google_auth", to: "google_auth#create"
+      # post 'facebook_auth', to: 'facebook_auth#create
     end
   end
 end

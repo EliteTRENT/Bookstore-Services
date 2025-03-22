@@ -1,5 +1,5 @@
 class Api::V1::BooksController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  before_action :authenticate_request
 
   def create
     # Check if a file is uploaded (CSV case) or book params are provided (single book case)
@@ -84,6 +84,22 @@ class Api::V1::BooksController < ApplicationController
       }, status: :ok
     else
       render json: { errors: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
+  def stock
+    unless params[:book_ids].present?
+      render json: { success: false, error: "book_ids parameter is required" }, status: :bad_request
+      return
+    end
+
+    book_ids = params[:book_ids].split(",").map(&:to_i)
+    result = BookService.fetch_stock(book_ids)
+
+    if result[:success]
+      render json: { success: true, stock: result[:stock] }, status: :ok
+    else
+      render json: { success: false, error: result[:error] }, status: :unprocessable_entity
     end
   end
 
