@@ -29,6 +29,7 @@ class CartService
           cart_id: item.id,
           book_id: item.book_id,
           book_name: item.book&.name,
+          author_name: item.book&.author,
           quantity: item.quantity,
           price: item.book&.discounted_price,
           image_url: item.book&.book_image
