@@ -15,7 +15,7 @@ class AddressService
         { success: false, error: address.errors.full_messages }
       end
     rescue ArgumentError => e
-      { success: false, error: ["Type is not included in the list"] }
+      { success: false, error: ["Type must be 'home', 'work', or 'other'"] }
     end
   end
 
@@ -29,7 +29,7 @@ class AddressService
           { success: false, error: address.errors.full_messages }
         end
       rescue ArgumentError => e
-        { success: false, error: ["Type is not included in the list"] }
+        { success: false, error: ["Type must be 'home', 'work', or 'other'"] }
       end
     else
       { success: false, error: ["Address not found"] }
