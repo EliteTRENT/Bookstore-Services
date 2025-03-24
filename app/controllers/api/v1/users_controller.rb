@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [:signup, :login]
+  skip_before_action :authenticate_request, only: [ :signup, :login, :forgetPassword, :resetPassword]
   def signup
     result = UserService.signup(user_params)
     if result[:success]
@@ -24,6 +24,8 @@ class Api::V1::UsersController < ApplicationController
       else
         render json: { errors: result[:error] }, status: :unprocessable_entity
       end
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.message }, status: :unprocessable_entity
     rescue StandardError => e
       Rails.logger.error "Login error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
@@ -34,18 +36,18 @@ class Api::V1::UsersController < ApplicationController
   def forgetPassword
     result = UserService.forgetPassword(forget_params)
     if result[:success]
-      render json: { message: result[:message], otp: result[:otp], user_id: result[:user_id]  }, status: :ok
+      render json: { success: true, message: result[:message], otp: result[:otp], user_id: result[:user_id]  }, status: :ok
     else
-      render json: { errors: result[:error] }, status: :unprocessable_entity
+      render json: { success: false, errors: result[:error] }, status: :unprocessable_entity
     end
   end
 
   def resetPassword
     result = UserService.resetPassword(params[:id], reset_params)
     if result[:success]
-      render json: { message: result[:message] }, status: :ok
+      render json: { success: true, message: result[:message] }, status: :ok
     else
-      render json: { errors: result[:error] }, status: :unprocessable_entity
+      render json: { success: false, errors: result[:error] }, status: :unprocessable_entity
     end
   end
 

@@ -3,10 +3,11 @@ class Api::V1::GoogleAuthController < ApplicationController
   skip_before_action :authenticate_request, only: :create
 
   GOOGLE_CLIENT_ID = ENV.fetch("GOOGLE_CLIENT_ID") { raise "GOOGLE_CLIENT_ID must be set" }
+
   def create
-    user = User.from_google(google_params[:token])
+    user = authenticate_with_google(google_params[:token])
     if user
-      token = JsonWebToken.encode({ id: user.id, name: user.name, email: user.email }) # Match normal login
+      token = JsonWebToken.encode({ id: user.id, name: user.name, email: user.email })
       render json: {
         message: "Authentication successful",
         token: token,
@@ -15,16 +16,11 @@ class Api::V1::GoogleAuthController < ApplicationController
         email: user.email,
         mobile_number: user.mobile_number
       }, status: :ok
-    else
-      render json: { error: "Google authentication failed" }, status: :unprocessable_entity
     end
+    # No else clause; errors are rendered in authenticate_with_google
   end
 
   private
-
-  def extract_token
-    params[:token] || params.dig(:google_auth, :token) || params[:id_token]
-  end
 
   def authenticate_with_google(token)
     validator = GoogleIDToken::Validator.new
@@ -50,7 +46,7 @@ class Api::V1::GoogleAuthController < ApplicationController
         google_id: payload["sub"],
         email: payload["email"],
         name: payload["name"]
-      ) { |u| u.skip_validation = true } # Custom bypass flag or use save!(validate: false) post-initialization
+      ) # Note: No skip_validation here unless your User model supports it
       Rails.logger.info "New user created: #{user.id}"
     end
     user
