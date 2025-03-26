@@ -296,4 +296,68 @@ RSpec.describe CartService, type: :service do
       end
     end
   end
+
+  describe '.update_quantity' do
+    context 'with valid attributes' do
+      it 'updates quantity successfully' do
+        cart_params = { book_id: book.id, quantity: 5 }
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart quantity updated')
+        expect(result[:cart].quantity).to eq(5)
+      end
+
+      it 'sets quantity to minimum valid value' do
+        cart_params = { book_id: book.id, quantity: 1 }
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].quantity).to eq(1)
+      end
+
+      it 'updates quantity with string input' do
+        cart_params = { book_id: book.id, quantity: '3' }
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].quantity).to eq(3)
+      end
+    end
+
+    context 'with invalid attributes' do
+      it 'returns error for nil quantity' do
+        cart_params = { book_id: book.id, quantity: nil }
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Invalid quantity')
+      end
+
+      it 'returns error for zero quantity' do
+        cart_params = { book_id: book.id, quantity: 0 }
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Invalid quantity')
+      end
+
+      it 'returns error for non-existent cart item' do
+        cart_params = { book_id: 9999, quantity: 1 }
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Cart item not found')
+      end
+
+      it 'handles database errors' do
+        cart_params = { book_id: book.id, quantity: 5 }
+        allow(Cart).to receive(:find_by).and_raise(StandardError.new('DB error'))
+        result = CartService.update_quantity(cart_params, user.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Error updating cart quantity: DB error')
+      end
+    end
+  end
 end
