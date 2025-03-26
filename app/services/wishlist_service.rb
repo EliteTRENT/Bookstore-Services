@@ -1,5 +1,5 @@
 class WishlistService
-  def self.addBook(token, wishlist_params)
+  def self.create(token, wishlist_params)
     token_full = JsonWebToken.decode(token)
     token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email
@@ -15,7 +15,7 @@ class WishlistService
     end
   end
 
-  def self.getAll(token)
+  def self.index(token)
     token_full = JsonWebToken.decode(token)
     token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email
@@ -41,22 +41,7 @@ class WishlistService
     { success: true, message: valid_wishlists }
   end
 
-  def self.destroy(token, book_id)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
-    return { success: false, error: "Invalid token" } unless token_email
-    user = User.find_by(email: token_email)
-    return { success: false, error: "User not found" } unless user
-    wishlist_item = user.wishlists.find_by(book_id: book_id, is_deleted: false)
-    if wishlist_item
-      wishlist_item.update(is_deleted: true)
-      { success: true, message: "Book removed from wishlist!" }
-    else
-      { success: false, error: "Book not found in wishlist" }
-    end
-  end
-
-  def self.destroyByWishlistId(token, wishlist_id)
+  def self.mark_book_as_deleted(token, wishlist_id)
     token_full = JsonWebToken.decode(token)
     token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email

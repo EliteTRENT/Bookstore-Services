@@ -34,7 +34,7 @@ class Api::V1::BooksController < ApplicationController
     per_page = params[:per_page]&.to_i || 10
     sort_by = params[:sort_by]
 
-    result = BookService.get_all_books(page, per_page, sort_by)
+    result = BookService.index_books(page, per_page, sort_by)
     if result[:success]
       render json: {
         message: result[:message],

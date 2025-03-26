@@ -56,7 +56,7 @@ class BookService
     end
   end
 
-  def self.get_all_books(page = 1, per_page = 10, sort_by = nil)
+  def self.index_books(page = 1, per_page = 10, sort_by = nil)
     cache_key = "books:all:#{page}:#{per_page}:#{sort_by || 'default'}"
     cached_result = REDIS.get(cache_key)
     if cached_result

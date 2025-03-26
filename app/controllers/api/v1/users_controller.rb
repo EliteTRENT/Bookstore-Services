@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [ :signup, :login, :forgetPassword, :resetPassword]
+  skip_before_action :authenticate_request, only: [ :signup, :login, :forgot_password, :reset_password ]
   def signup
     result = UserService.signup(user_params)
     if result[:success]
@@ -33,8 +33,8 @@ class Api::V1::UsersController < ApplicationController
     end
   end
 
-  def forgetPassword
-    result = UserService.forgetPassword(forget_params)
+  def forgot_password
+    result = UserService.forgot_password(forget_params)
     if result[:success]
       render json: { success: true, message: result[:message], otp: result[:otp], user_id: result[:user_id]  }, status: :ok
     else
@@ -42,8 +42,8 @@ class Api::V1::UsersController < ApplicationController
     end
   end
 
-  def resetPassword
-    result = UserService.resetPassword(params[:id], reset_params)
+  def reset_password
+    result = UserService.reset_password(params[:id], reset_params)
     if result[:success]
       render json: { success: true, message: result[:message] }, status: :ok
     else

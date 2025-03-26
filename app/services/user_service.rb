@@ -12,7 +12,7 @@ class UserService
     user = User.find_by(email: login_params[:email])
     if user
       if user.authenticate(login_params[:password])
-        token = JsonWebToken.encode({ name: user.name, email: user.email, id: user.id})
+        token = JsonWebToken.encode({ name: user.name, email: user.email, id: user.id })
         { success: true, message: "Login successful", token: token, user_id: user.id, user_name: user.name, email: user.email, mobile_number: user.mobile_number }
       else
         { success: false, error: "Wrong email or password" }
@@ -22,7 +22,7 @@ class UserService
     end
   end
 
-  def self.forgetPassword(forget_params)
+  def self.forgot_password(forget_params)
     user = User.find_by(email: forget_params[:email])
     if user
       @@otp = rand(100000..999999)
@@ -39,7 +39,7 @@ class UserService
     end
   end
 
-  def self.resetPassword(user_id, reset_params)
+  def self.reset_password(user_id, reset_params)
     user = User.find_by(id: user_id)
     if !user
       return { success: false, error: "User not found" }

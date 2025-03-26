@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Api::V1::CartsController, type: :controller do
+RSpec.describe CartService, type: :service do
   let!(:user) do
     User.create!(
       name: 'John Doe',
@@ -19,216 +19,280 @@ RSpec.describe Api::V1::CartsController, type: :controller do
       quantity: 10,
       book_details: 'A complete guide to Rails',
       genre: 'Technology',
-      book_image: 'image_url'
+      book_image: 'image_url',
+      is_deleted: false
     )
   end
 
-  describe 'POST #add_book' do
-    context 'with valid parameters' do
-      let(:valid_params) do
-        {
-          cart: {
-            user_id: user.id,
-            book_id: book.id,
-            quantity: 2
-          }
-        }
+  let!(:cart_item) do
+    Cart.create!(
+      user_id: user.id,
+      book_id: book.id,
+      quantity: 2,
+      is_deleted: false
+    )
+  end
+
+  describe '.create' do
+    context 'with valid attributes' do
+      it 'adds a new book to the cart successfully' do
+        new_book = Book.create!(name: 'Test Book', author: 'Test', mrp: 500, discounted_price: 400, quantity: 5, is_deleted: false)
+        cart_params = { user_id: user.id, book_id: new_book.id, quantity: 1 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Book added to cart')
+        expect(result[:cart].quantity).to eq(1)
       end
 
-      it 'adds a new book to cart' do
-        post :add_book, params: valid_params
-        expect(response).to have_http_status(:ok)
-        json_response = JSON.parse(response.body)
-        expect(json_response['message']).to eq('Book added to cart')
-        expect(json_response['cart']['quantity']).to eq(2)
+      it 'updates quantity if book is already in cart' do
+        cart_params = { user_id: user.id, book_id: book.id, quantity: 3 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Book quantity updated in cart')
+        expect(result[:cart].quantity).to eq(5)
       end
 
-      context 'when book already exists in cart' do
-        let!(:existing_cart_item) do
-          Cart.create!(
-            user_id: user.id,
-            book_id: book.id,
-            quantity: 2,
-            is_deleted: false
-          )
-        end
+      it 'handles large quantity updates correctly' do
+        cart_params = { user_id: user.id, book_id: book.id, quantity: 100 }
+        result = CartService.create(cart_params)
 
-        it 'updates the quantity' do
-          post :add_book, params: valid_params
-          expect(response).to have_http_status(:ok)
-          json_response = JSON.parse(response.body)
-          expect(json_response['message']).to eq('Book quantity updated in cart')
-          expect(json_response['cart']['quantity']).to eq(4)
-        end
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].quantity).to eq(102) # 2 + 100
+      end
+
+      it 'adds book with minimum valid quantity' do
+        new_book = Book.create!(name: 'Min Book', author: 'Min', mrp: 300, discounted_price: 200, quantity: 5, is_deleted: false)
+        cart_params = { user_id: user.id, book_id: new_book.id, quantity: 1 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Book added to cart')
       end
     end
 
-    context 'with invalid parameters' do
-      let(:invalid_params) do
-        {
-          cart: {
-            user_id: user.id,
-            book_id: book.id,
-            quantity: 0
-          }
-        }
+    context 'when quantity is invalid' do
+      it 'returns an error for nil quantity' do
+        cart_params = { user_id: user.id, book_id: book.id, quantity: nil }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Invalid quantity')
       end
 
-      it 'returns an error' do
-        post :add_book, params: invalid_params
-        expect(response).to have_http_status(:unprocessable_entity)
-        json_response = JSON.parse(response.body)
-        expect(json_response['error']).to eq('Invalid quantity')
+      it 'returns an error for zero quantity' do
+        cart_params = { user_id: user.id, book_id: book.id, quantity: 0 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Invalid quantity')
+      end
+
+      it 'returns an error for negative quantity' do
+        cart_params = { user_id: user.id, book_id: book.id, quantity: -1 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Invalid quantity')
+      end
+
+      it 'returns an error for string quantity' do
+        cart_params = { user_id: user.id, book_id: book.id, quantity: 'invalid' }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Invalid quantity') # 'invalid'.to_i = 0
+      end
+    end
+
+    context 'when save fails due to validation' do
+      it 'returns an error for non-existent book' do
+        cart_params = { user_id: user.id, book_id: 9999, quantity: 1 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to include('Book must exist')
+      end
+
+      it 'returns an error for non-existent user' do
+        cart_params = { user_id: 9999, book_id: book.id, quantity: 1 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to include('User must exist')
+      end
+
+      it 'returns an error when cart save fails unexpectedly' do
+        allow_any_instance_of(Cart).to receive(:save).and_return(false)
+        allow_any_instance_of(Cart).to receive(:errors).and_return(double(full_messages: [ 'Save failed' ]))
+        cart_params = { user_id: user.id, book_id: book.id, quantity: 1 }
+        result = CartService.create(cart_params)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq([ 'Save failed' ])
       end
     end
   end
 
-  describe 'GET #get_cart' do
-    context 'when cart has items' do
-      let!(:cart_item) do
-        Cart.create!(
-          user_id: user.id,
-          book_id: book.id,
-          quantity: 2,
-          is_deleted: false
-        )
+  describe '.get_cart' do
+    context 'when the cart has items' do
+      it 'retrieves the cart successfully with one item' do
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart retrieved successfully')
+        expect(result[:cart].size).to eq(1)
+        expect(result[:cart].first[:book_name]).to eq(book.name)
       end
 
-      it 'returns cart items' do
-        get :get_cart, params: { user_id: user.id }
-        expect(response).to have_http_status(:ok)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be true
-        expect(json_response['message']).to eq('Cart retrieved successfully')
-        expect(json_response['cart'].length).to eq(1)
-        expect(json_response['cart'][0]['quantity']).to eq(2)
-        expect(json_response['cart'][0]['book_name']).to eq(book.name)
+      it 'retrieves the cart with multiple items' do
+        new_book = Book.create!(name: 'New Book', author: 'Author', mrp: 600, discounted_price: 500, quantity: 5, is_deleted: false)
+        Cart.create!(user_id: user.id, book_id: new_book.id, quantity: 1, is_deleted: false)
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].size).to eq(2)
+      end
+
+      it 'includes correct pricing for items' do
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].first[:price]).to eq(book.discounted_price)
+      end
+
+      it 'handles soft-deleted books by still showing their names' do
+        book.update(is_deleted: true)
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].first[:book_name]).to eq('Ruby on Rails Guide') # Fixed failing test
+      end
+
+      it 'excludes soft-deleted cart items' do
+        cart_item.update(is_deleted: true)
+        new_book = Book.create!(name: 'Active Book', author: 'Author', mrp: 700, discounted_price: 600, quantity: 5, is_deleted: false)
+        Cart.create!(user_id: user.id, book_id: new_book.id, quantity: 1, is_deleted: false)
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:cart].size).to eq(1)
+        expect(result[:cart].first[:book_name]).to eq('Active Book')
       end
     end
 
-    context 'when cart is empty' do
-      it 'returns empty cart' do
-        get :get_cart, params: { user_id: user.id }
-        expect(response).to have_http_status(:ok)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be true
-        expect(json_response['message']).to eq('Cart is empty')
-        expect(json_response['cart']).to be_empty
+    context 'when the cart is empty' do
+      it 'returns an empty cart when no items exist' do
+        Cart.where(user_id: user.id).update_all(is_deleted: true)
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart is empty')
+        expect(result[:cart]).to eq([])
+      end
+
+      it 'returns an empty cart for a user with no cart history' do
+        new_user = User.create!(
+          name: 'Jane',
+          email: 'jane@gmail.com',
+          password: 'Password@123',
+          mobile_number: '+919876543211'
+        )
+        result = CartService.get_cart(new_user.id)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart is empty')
+        expect(result[:cart]).to eq([])
+      end
+
+      it 'handles invalid user_id gracefully' do
+        result = CartService.get_cart(9999)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart is empty')
+        expect(result[:cart]).to eq([])
       end
     end
 
     context 'when an error occurs' do
-      it 'handles errors gracefully' do
+      it 'handles database connection errors gracefully' do
         allow(Cart).to receive(:where).and_raise(StandardError.new('Database error'))
-        get :get_cart, params: { user_id: user.id }
-        expect(response).to have_http_status(:ok)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be false
-        expect(json_response['error']).to eq('Error retrieving cart: Database error')
+        result = CartService.get_cart(user.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Error retrieving cart: Database error')
+      end
+
+      it 'handles nil user_id gracefully' do
+        result = CartService.get_cart(nil)
+
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Cart is empty')
+        expect(result[:cart]).to eq([])
       end
     end
   end
 
-  describe 'DELETE #soft_delete_book' do
-    let(:token) { "mocked_token" }
+  describe '.soft_delete_book' do
+    context 'when book exists and is not soft deleted' do
+      it 'soft deletes the book successfully' do
+        result = CartService.soft_delete_book(book.id)
 
-    before do
-      # Ensure the Authorization header is set before each test
-      request.headers['Authorization'] = "Bearer #{token}"
-    end
-
-    context 'with valid token' do
-      before do
-        # Stub the token decoding and user lookup for valid token cases
-        allow(JsonWebToken).to receive(:decode).with(token).and_return(user.email)
-        allow(User).to receive(:find_by).with(email: user.email).and_return(user)
+        expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Book soft deleted successfully')
+        expect(result[:book].is_deleted).to be_truthy
       end
 
-      context 'when cart item exists' do
-        let!(:cart_item) do
-          Cart.create!(
-            user_id: user.id,
-            book_id: book.id,
-            quantity: 2,
-            is_deleted: false
-          )
-        end
+      it 'returns the updated book object' do
+        result = CartService.soft_delete_book(book.id)
 
-        it 'decreases quantity if more than 1' do
-          delete :soft_delete_book, params: { id: book.id }
-          expect(response).to have_http_status(:ok)
-          json_response = JSON.parse(response.body)
-          expect(json_response['message']).to eq('Book quantity decreased in cart')
-          expect(json_response['book']['quantity']).to eq(1)
-        end
-
-        context 'when quantity is 1' do
-          let!(:cart_item) do
-            Cart.create!(
-              user_id: user.id,
-              book_id: book.id,
-              quantity: 1,
-              is_deleted: false
-            )
-          end
-
-          it 'soft deletes the cart item' do
-            delete :soft_delete_book, params: { id: book.id }
-            expect(response).to have_http_status(:ok)
-            json_response = JSON.parse(response.body)
-            expect(json_response['message']).to eq('Book removed from cart')
-            expect(json_response['book']['is_deleted']).to be true
-          end
-        end
-      end
-
-      context 'when cart item does not exist' do
-        it 'returns an error' do
-          delete :soft_delete_book, params: { id: 9999 }
-          expect(response).to have_http_status(:unprocessable_entity)
-          json_response = JSON.parse(response.body)
-          expect(json_response['error']).to eq('Cart item not found')
-        end
-      end
-
-      context 'when an error occurs' do
-        it 'handles errors gracefully' do
-          allow(Cart).to receive(:find_by).and_raise(StandardError.new('Database error'))
-          delete :soft_delete_book, params: { id: book.id }
-          expect(response).to have_http_status(:unprocessable_entity)
-          json_response = JSON.parse(response.body)
-          expect(json_response['error']).to eq('Error updating cart item: Database error')
-        end
+        expect(result[:success]).to be_truthy
+        expect(result[:book].id).to eq(book.id)
       end
     end
 
-    context 'without token' do
-      before do
-        # Remove the Authorization header for this specific test
-        request.headers['Authorization'] = nil
+    context 'when book does not exist or is already soft deleted' do
+      it 'returns an error for non-existent book' do
+        result = CartService.soft_delete_book(9999)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Book not found')
       end
 
-      it 'fails due to nil user and raises NoMethodError' do
-        expect {
-          delete :soft_delete_book, params: { id: book.id }
-        }.to raise_error(NoMethodError, /undefined method `id' for nil/)
+      it 'returns an error for already soft-deleted book' do
+        book.update(is_deleted: true)
+        result = CartService.soft_delete_book(book.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Book not found')
+      end
+
+      it 'handles nil book_id gracefully' do
+        result = CartService.soft_delete_book(nil)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Book not found')
       end
     end
 
-    context 'with invalid token' do
-      let(:invalid_token) { "invalid_token" }
+    context 'when an error occurs' do
+      it 'handles database errors gracefully' do
+        allow(Book).to receive(:active).and_raise(StandardError.new('Database error'))
+        result = CartService.soft_delete_book(book.id)
 
-      before do
-        # Set an invalid token
-        request.headers['Authorization'] = "Bearer #{invalid_token}"
-        # Stub the token decoding to return nil for invalid token
-        allow(JsonWebToken).to receive(:decode).with(invalid_token).and_return(nil)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq('Error soft deleting book: Database error')
       end
 
-      it 'fails due to nil user and raises NoMethodError' do
-        expect {
-          delete :soft_delete_book, params: { id: book.id }
-        }.to raise_error(NoMethodError, /undefined method `id' for nil/)
+      it 'returns an error if update fails' do
+        allow_any_instance_of(Book).to receive(:update).and_return(false)
+        allow_any_instance_of(Book).to receive(:errors).and_return(double(full_messages: [ 'Update failed' ]))
+
+        result = CartService.soft_delete_book(book.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq([ 'Update failed' ])
       end
     end
   end

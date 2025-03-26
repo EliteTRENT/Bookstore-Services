@@ -5,7 +5,7 @@ RSpec.describe ReviewService, type: :service do
   let!(:user2) { User.create!(name: "Jane Doe", email: "jane.doe@gmail.com", password: "Password@123", mobile_number: "9876543211") }
   let!(:book) { Book.create!(name: "The Great Gatsby", author: "F. Scott Fitzgerald", mrp: 10.99, discounted_price: 9.99, quantity: 10) }
 
-  describe ".add_review" do
+  describe ".create" do
     context "with valid attributes" do
       let(:valid_attributes) do
         {
@@ -17,7 +17,7 @@ RSpec.describe ReviewService, type: :service do
       end
 
       it "creates a review successfully" do
-        result = ReviewService.add_review(valid_attributes)
+        result = ReviewService.create(valid_attributes)
 
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Review added successfully")
@@ -34,7 +34,7 @@ RSpec.describe ReviewService, type: :service do
     context "with invalid attributes" do
       it "returns an error when user_id is missing" do
         invalid_attributes = { book_id: book.id, rating: 5, comment: "Great book!" }
-        result = ReviewService.add_review(invalid_attributes)
+        result = ReviewService.create(invalid_attributes)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("User must exist")
@@ -42,7 +42,7 @@ RSpec.describe ReviewService, type: :service do
 
       it "returns an error when book_id is missing" do
         invalid_attributes = { user_id: user.id, rating: 5, comment: "Great book!" }
-        result = ReviewService.add_review(invalid_attributes)
+        result = ReviewService.create(invalid_attributes)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Book must exist")
@@ -50,7 +50,7 @@ RSpec.describe ReviewService, type: :service do
 
       it "returns an error when rating is missing" do
         invalid_attributes = { user_id: user.id, book_id: book.id, comment: "Great book!" }
-        result = ReviewService.add_review(invalid_attributes)
+        result = ReviewService.create(invalid_attributes)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Rating can't be blank")
@@ -58,7 +58,7 @@ RSpec.describe ReviewService, type: :service do
 
       it "returns an error when rating is out of range" do
         invalid_attributes = { user_id: user.id, book_id: book.id, rating: 10, comment: "Great book!" }
-        result = ReviewService.add_review(invalid_attributes)
+        result = ReviewService.create(invalid_attributes)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Rating is not included in the list")
@@ -66,7 +66,7 @@ RSpec.describe ReviewService, type: :service do
 
       it "returns an error when comment is missing" do
         invalid_attributes = { user_id: user.id, book_id: book.id, rating: 4, comment: "" }
-        result = ReviewService.add_review(invalid_attributes)
+        result = ReviewService.create(invalid_attributes)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Comment can't be blank")
@@ -75,8 +75,8 @@ RSpec.describe ReviewService, type: :service do
 
     context "when a user writes multiple reviews for the same book" do
       it "allows multiple reviews from the same user on the same book" do
-        first_review = ReviewService.add_review(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
-        second_review = ReviewService.add_review(user_id: user.id, book_id: book.id, rating: 4, comment: "Great read!")
+        first_review = ReviewService.create(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
+        second_review = ReviewService.create(user_id: user.id, book_id: book.id, rating: 4, comment: "Great read!")
 
         expect(first_review[:success]).to be_truthy
         expect(second_review[:success]).to be_truthy
@@ -87,15 +87,15 @@ RSpec.describe ReviewService, type: :service do
     end
   end
 
-  describe ".get_reviews" do
+  describe ".index" do
     context "when reviews exist for the book" do
       before do
-        ReviewService.add_review(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
-        ReviewService.add_review(user_id: user2.id, book_id: book.id, rating: 4, comment: "Great read!")
+        ReviewService.create(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
+        ReviewService.create(user_id: user2.id, book_id: book.id, rating: 4, comment: "Great read!")
       end
 
       it "returns all reviews for the given book" do
-        result = ReviewService.get_reviews(book.id)
+        result = ReviewService.index(book.id)
 
         expect(result).to include(:reviews, :average_rating, :total_reviews)
 
@@ -107,13 +107,13 @@ RSpec.describe ReviewService, type: :service do
         expect(result[:reviews].size).to eq(2)
 
         review_ratings = result[:reviews].map { |r| r["rating"] || r[:rating] }
-        expect(review_ratings).to match_array([5, 4])
+        expect(review_ratings).to match_array([ 5, 4 ])
       end
     end
 
     context "when no reviews exist for the book" do
       it "returns an empty array with default values" do
-        result = ReviewService.get_reviews(book.id)
+        result = ReviewService.index(book.id)
 
         expect(result).to include(:reviews, :average_rating, :total_reviews)
         expect(result[:reviews]).to eq([])
@@ -124,7 +124,7 @@ RSpec.describe ReviewService, type: :service do
 
     context "when an invalid book_id is provided" do
       it "returns an empty array with default values" do
-        result = ReviewService.get_reviews(-1) # Invalid book_id
+        result = ReviewService.index(-1) # Invalid book_id
 
         expect(result).to include(:reviews, :average_rating, :total_reviews)
         expect(result[:reviews]).to eq([])
@@ -134,9 +134,9 @@ RSpec.describe ReviewService, type: :service do
     end
   end
 
-  describe ".delete_review" do
+  describe ".destroy" do
     let!(:review) do
-      ReviewService.add_review(
+      ReviewService.create(
         user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!"
       )[:review]
     end
@@ -144,7 +144,7 @@ RSpec.describe ReviewService, type: :service do
     context "when the review exists" do
       it "deletes the review successfully" do
         # Pass both review_id and user_id
-        result = ReviewService.delete_review(review["id"], user.id)
+        result = ReviewService.destroy(review["id"], user.id)
 
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Review deleted successfully")
@@ -154,7 +154,7 @@ RSpec.describe ReviewService, type: :service do
 
     context "when the review does not exist" do
       it "returns an error message" do
-        result = ReviewService.delete_review(-1, user.id)
+        result = ReviewService.destroy(-1, user.id)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Review not found or you don't have permission to delete it")
@@ -163,7 +163,7 @@ RSpec.describe ReviewService, type: :service do
 
     context "when the review belongs to another user" do
       it "prevents deletion by unauthorized user" do
-        result = ReviewService.delete_review(review["id"], user2.id)
+        result = ReviewService.destroy(review["id"], user2.id)
 
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Review not found or you don't have permission to delete it")

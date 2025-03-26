@@ -13,10 +13,10 @@ RSpec.describe "Wishlists API", type: :request do
   }
   let(:token) { JsonWebToken.encode(email: user.email) }
 
-  describe "POST /api/v1/wishlists/add" do
+  describe "POST /api/v1/wishlists" do
     context "with a valid book and token" do
       it "currently fails authentication" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: { wishlist: { book_id: book.id } },
              headers: { "Authorization" => "Bearer #{token}" }
 
@@ -28,7 +28,7 @@ RSpec.describe "Wishlists API", type: :request do
       before { user.wishlists.create(book: book, is_deleted: false) }
 
       it "currently fails authentication" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: { wishlist: { book_id: book.id } },
              headers: { "Authorization" => "Bearer #{token}" }
 
@@ -38,7 +38,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "without an authorization token" do
       it "returns a missing token error" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: { wishlist: { book_id: book.id } }
 
         expect(response).to have_http_status(:unauthorized)
@@ -49,7 +49,7 @@ RSpec.describe "Wishlists API", type: :request do
     context "with an invalid token" do
       it "crashes due to invalid token handling" do
         expect {
-          post "/api/v1/wishlists/add",
+          post "/api/v1/wishlists",
                params: { wishlist: { book_id: book.id } },
                headers: { "Authorization" => "Bearer invalid_token" }
         }.to raise_error(NoMethodError)
@@ -60,7 +60,7 @@ RSpec.describe "Wishlists API", type: :request do
       let(:fake_token) { JsonWebToken.encode(email: "fake_user@gmail.com") }
 
       it "currently fails authentication" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: { wishlist: { book_id: book.id } },
              headers: { "Authorization" => "Bearer #{fake_token}" }
 
@@ -70,7 +70,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with a non-existent book" do
       it "currently fails authentication" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: { wishlist: { book_id: 9999 } },
              headers: { "Authorization" => "Bearer #{token}" }
 
@@ -80,7 +80,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with an invalid book_id format" do
       it "currently fails authentication" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: { wishlist: { book_id: "abc" } },
              headers: { "Authorization" => "Bearer #{token}" }
 
@@ -90,7 +90,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with missing wishlist params" do
       it "currently fails authentication" do
-        post "/api/v1/wishlists/add",
+        post "/api/v1/wishlists",
              params: {},
              headers: { "Authorization" => "Bearer #{token}" }
 
@@ -99,12 +99,12 @@ RSpec.describe "Wishlists API", type: :request do
     end
   end
 
-  describe "GET /api/v1/wishlists/getAll" do
+  describe "GET /api/v1/wishlists" do
     context "with a valid token and existing wishlist items" do
       before { user.wishlists.create(book: book, is_deleted: false) }
 
       it "currently fails authentication" do
-        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{token}" }
+        get "/api/v1/wishlists", headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -112,7 +112,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "without an authorization token" do
       it "returns a missing token error" do
-        get "/api/v1/wishlists/getAll"
+        get "/api/v1/wishlists"
 
         expect(response).to have_http_status(:unauthorized)
         expect(JSON.parse(response.body)["error"]).to eq("Missing token")
@@ -122,7 +122,7 @@ RSpec.describe "Wishlists API", type: :request do
     context "with an invalid token" do
       it "crashes due to invalid token handling" do
         expect {
-          get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer invalid_token" }
+          get "/api/v1/wishlists", headers: { "Authorization" => "Bearer invalid_token" }
         }.to raise_error(NoMethodError)
       end
     end
@@ -131,7 +131,7 @@ RSpec.describe "Wishlists API", type: :request do
       let(:fake_token) { JsonWebToken.encode(email: "fake_user@gmail.com") }
 
       it "currently fails authentication" do
-        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{fake_token}" }
+        get "/api/v1/wishlists", headers: { "Authorization" => "Bearer #{fake_token}" }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -139,7 +139,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with an empty wishlist" do
       it "currently fails authentication" do
-        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{token}" }
+        get "/api/v1/wishlists", headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -152,19 +152,19 @@ RSpec.describe "Wishlists API", type: :request do
       end
 
       it "currently fails authentication" do
-        get "/api/v1/wishlists/getAll", headers: { "Authorization" => "Bearer #{token}" }
+        get "/api/v1/wishlists", headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
       end
     end
   end
 
-  describe "DELETE /api/v1/wishlists/destroy/{book_id}" do
+  describe "DELETE /api/v1/wishlists/mark_wishlist_as_deleted/{book_id}" do
     context "with a valid token and book in the wishlist" do
       before { user.wishlists.create(book: book, is_deleted: false) }
 
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroy/#{book.id}",
+        delete "/api/v1/wishlists/mark_wishlist_as_deleted/#{book.id}",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -173,7 +173,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with a valid token but book not in the wishlist" do
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroy/#{book.id}",
+        delete "/api/v1/wishlists/mark_wishlist_as_deleted/#{book.id}",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -182,7 +182,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with a non-existent book" do
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroy/9999",
+        delete "/api/v1/wishlists/mark_wishlist_as_deleted/9999",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -191,7 +191,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "without an authorization token" do
       it "returns a missing token error" do
-        delete "/api/v1/wishlists/destroy/#{book.id}"
+        delete "/api/v1/wishlists/mark_wishlist_as_deleted/#{book.id}"
 
         expect(response).to have_http_status(:unauthorized)
         expect(JSON.parse(response.body)["error"]).to eq("Missing token")
@@ -201,7 +201,7 @@ RSpec.describe "Wishlists API", type: :request do
     context "with an invalid token" do
       it "crashes due to invalid token handling" do
         expect {
-          delete "/api/v1/wishlists/destroy/#{book.id}",
+          delete "/api/v1/wishlists/mark_wishlist_as_deleted/#{book.id}",
                  headers: { "Authorization" => "Bearer invalid_token" }
         }.to raise_error(NoMethodError)
       end
@@ -211,7 +211,7 @@ RSpec.describe "Wishlists API", type: :request do
       let(:fake_token) { JsonWebToken.encode(email: "fake_user@gmail.com") }
 
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroy/#{book.id}",
+        delete "/api/v1/wishlists/mark_wishlist_as_deleted/#{book.id}",
                headers: { "Authorization" => "Bearer #{fake_token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -220,7 +220,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with an invalid book_id format" do
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroy/abc",
+        delete "/api/v1/wishlists/mark_wishlist_as_deleted/abc",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -228,12 +228,12 @@ RSpec.describe "Wishlists API", type: :request do
     end
   end
 
-  describe "DELETE /api/v1/wishlists/destroyByWishlistId" do
+  describe "DELETE /api/v1/wishlists/mark_book_as_deleted" do
     let!(:wishlist_item) { user.wishlists.create(book: book, is_deleted: false) }
 
     context "with a valid token and existing wishlist item" do
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroyByWishlistId/#{wishlist_item.id}",
+        delete "/api/v1/wishlists/mark_book_as_deleted/#{wishlist_item.id}",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -242,7 +242,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with a valid token but non-existent wishlist id" do
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroyByWishlistId/9999",
+        delete "/api/v1/wishlists/mark_book_as_deleted/9999",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -251,7 +251,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "without an authorization token" do
       it "returns a missing token error" do
-        delete "/api/v1/wishlists/destroyByWishlistId/#{wishlist_item.id}"
+        delete "/api/v1/wishlists/mark_book_as_deleted/#{wishlist_item.id}"
 
         expect(response).to have_http_status(:unauthorized)
         expect(JSON.parse(response.body)["error"]).to eq("Missing token")
@@ -261,7 +261,7 @@ RSpec.describe "Wishlists API", type: :request do
     context "with an invalid token" do
       it "crashes due to invalid token handling" do
         expect {
-          delete "/api/v1/wishlists/destroyByWishlistId/#{wishlist_item.id}",
+          delete "/api/v1/wishlists/mark_book_as_deleted/#{wishlist_item.id}",
                  headers: { "Authorization" => "Bearer invalid_token" }
         }.to raise_error(NoMethodError)
       end
@@ -271,7 +271,7 @@ RSpec.describe "Wishlists API", type: :request do
       let(:fake_token) { JsonWebToken.encode(email: "fake_user@gmail.com") }
 
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroyByWishlistId/#{wishlist_item.id}",
+        delete "/api/v1/wishlists/mark_book_as_deleted/#{wishlist_item.id}",
                headers: { "Authorization" => "Bearer #{fake_token}" }
 
         expect(response).to have_http_status(:unauthorized)
@@ -280,7 +280,7 @@ RSpec.describe "Wishlists API", type: :request do
 
     context "with an invalid wishlist_id format" do
       it "currently fails authentication" do
-        delete "/api/v1/wishlists/destroyByWishlistId/abc",
+        delete "/api/v1/wishlists/mark_book_as_deleted/abc",
                headers: { "Authorization" => "Bearer #{token}" }
 
         expect(response).to have_http_status(:unauthorized)

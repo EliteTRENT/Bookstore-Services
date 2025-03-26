@@ -3,8 +3,8 @@ module Api
     class CartsController < ApplicationController
       before_action :authenticate_request
 
-      def add_book
-        result = CartService.add_book(cart_params)
+      def create
+        result = CartService.create(cart_params)
         if result[:success]
           render json: { message: result[:message], cart: result[:cart] }, status: :ok
         else

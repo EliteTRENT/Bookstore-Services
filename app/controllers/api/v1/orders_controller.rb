@@ -32,7 +32,7 @@ class Api::V1::OrdersController < ApplicationController
 
   def index
     token = request.headers["Authorization"]&.split(" ")&.last
-    result = OrderService.get_all_orders(token)
+    result = OrderService.index_orders(token)
     if result[:success]
       render json: { orders: result[:orders] }, status: :ok
     elsif result[:error] == "Invalid token"

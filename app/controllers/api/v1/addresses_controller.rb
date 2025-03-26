@@ -32,7 +32,6 @@ module Api
 
       def destroy
         result = AddressService.remove_address(current_user, params[:id])
-        # Always return 200 OK, let the success flag dictate the outcome
         render json: result, status: :ok
       end
 
@@ -61,15 +60,15 @@ module Api
           unless @current_user
             Rails.logger.info "User not found for email: #{email}"
             render json: { message: "Unauthorized - User not found" }, status: :unauthorized
-            return
+            nil
           end
         else
           Rails.logger.info "Token decode failed"
           render json: { message: "Unauthorized - Invalid token" }, status: :unauthorized
-          return
+          nil
         end
       end
-      
+
       def current_user
         @current_user
       end

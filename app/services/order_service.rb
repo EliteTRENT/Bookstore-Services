@@ -81,7 +81,7 @@ class OrderService
     { success: false, error: e.message }
   end
 
-  def self.get_all_orders(token)
+  def self.index_orders(token)
     token_full = JsonWebToken.decode(token)
     token_email = token_full["email"]
     return { success: false, error: "Invalid token" } unless token_email

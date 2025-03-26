@@ -1,5 +1,5 @@
 class CartService
-  def self.add_book(cart_params)
+  def self.create(cart_params)
     return { success: false, error: "Invalid quantity" } if cart_params[:quantity].nil? || cart_params[:quantity].to_i <= 0
 
     cart_item = Cart.find_by(user_id: cart_params[:user_id], book_id: cart_params[:book_id], is_deleted: false)

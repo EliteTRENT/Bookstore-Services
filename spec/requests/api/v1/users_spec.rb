@@ -215,7 +215,7 @@ RSpec.describe UserService, type: :service do
     end
   end
 
-  describe ".forgetPassword" do
+  describe ".forgot_password" do
     let!(:user) do
       User.create!(
         name: "John Doe",
@@ -231,7 +231,7 @@ RSpec.describe UserService, type: :service do
       end
 
       it "initiates password reset successfully" do
-        result = UserService.forgetPassword(email: "john.doe@gmail.com")
+        result = UserService.forgot_password(email: "john.doe@gmail.com")
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("OTP has been sent to john.doe@gmail.com, check your inbox")
         expect(result[:otp]).to be_a(Integer)
@@ -243,7 +243,7 @@ RSpec.describe UserService, type: :service do
 
     context "with an unregistered email" do
       it "returns an error" do
-        result = UserService.forgetPassword(email: "unknown@gmail.com")
+        result = UserService.forgot_password(email: "unknown@gmail.com")
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Email is not registered")
       end
@@ -251,7 +251,7 @@ RSpec.describe UserService, type: :service do
 
     context "with an empty email" do
       it "returns an error" do
-        result = UserService.forgetPassword(email: "")
+        result = UserService.forgot_password(email: "")
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Email is not registered")
       end
@@ -263,13 +263,13 @@ RSpec.describe UserService, type: :service do
       end
 
       it "returns an error" do
-        result = UserService.forgetPassword(email: "john.doe@gmail.com")
+        result = UserService.forgot_password(email: "john.doe@gmail.com")
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Failed to send OTP, please try again")
       end
     end
   end
-  describe ".resetPassword" do
+  describe ".reset_password" do
     let!(:user) do
       User.create!(
         name: "John Doe",
@@ -280,15 +280,15 @@ RSpec.describe UserService, type: :service do
     end
 
     before do
-      # Simulate a prior forgetPassword call to set OTP
+      # Simulate a prior forgot_password call to set OTP
       allow(UserMailer).to receive(:enqueue_otp_email).and_return(true)
-      UserService.forgetPassword(email: "john.doe@gmail.com")
+      UserService.forgot_password(email: "john.doe@gmail.com")
       allow(UserMailer).to receive(:password_reset_success_email).and_return(double(deliver_later: true))
     end
 
     context "with a valid user ID and OTP" do
       it "resets the password successfully" do
-        result = UserService.resetPassword(user.id, new_password: "NewPass@123", otp: UserService.class_variable_get(:@@otp))
+        result = UserService.reset_password(user.id, new_password: "NewPass@123", otp: UserService.class_variable_get(:@@otp))
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Password successfully reset")
         expect(user.reload.authenticate("NewPass@123")).to be_truthy
@@ -298,7 +298,7 @@ RSpec.describe UserService, type: :service do
 
     context "with an invalid user ID" do
       it "returns an error" do
-        result = UserService.resetPassword(999, new_password: "NewPass@123", otp: UserService.class_variable_get(:@@otp))
+        result = UserService.reset_password(999, new_password: "NewPass@123", otp: UserService.class_variable_get(:@@otp))
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("User not found")
       end
@@ -306,7 +306,7 @@ RSpec.describe UserService, type: :service do
 
     context "with an invalid OTP" do
       it "returns an error" do
-        result = UserService.resetPassword(user.id, new_password: "NewPass@123", otp: 999999)
+        result = UserService.reset_password(user.id, new_password: "NewPass@123", otp: 999999)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Invalid or expired OTP")
       end
@@ -315,7 +315,7 @@ RSpec.describe UserService, type: :service do
     context "with an expired OTP" do
       it "returns an error" do
         Timecop.travel(3.minutes.from_now) do
-          result = UserService.resetPassword(user.id, new_password: "NewPass@123", otp: UserService.class_variable_get(:@@otp))
+          result = UserService.reset_password(user.id, new_password: "NewPass@123", otp: UserService.class_variable_get(:@@otp))
           expect(result[:success]).to be_falsey
           expect(result[:error]).to eq("Invalid or expired OTP")
         end
@@ -324,7 +324,7 @@ RSpec.describe UserService, type: :service do
 
     context "with an invalid new password" do
       it "returns an error" do
-        result = UserService.resetPassword(user.id, new_password: "weak", otp: UserService.class_variable_get(:@@otp))
+        result = UserService.reset_password(user.id, new_password: "weak", otp: UserService.class_variable_get(:@@otp))
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one digit, and one special character")
       end

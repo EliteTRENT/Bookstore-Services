@@ -1,5 +1,5 @@
 class ReviewService
-  def self.add_review(review_params)
+  def self.create(review_params)
     review = Review.new(review_params)
     if review.save
       # Clear both individual book cache and all book list caches
@@ -11,7 +11,7 @@ class ReviewService
     end
   end
 
-  def self.get_reviews(book_id)
+  def self.show(book_id)
     reviews = Review.where(book_id: book_id).includes(:user).map do |review|
       {
         id: review.id,
@@ -33,7 +33,7 @@ class ReviewService
     }
   end
 
-  def self.delete_review(review_id, user_id)
+  def self.destroy(review_id, user_id)
     review = Review.find_by(id: review_id, user_id: user_id)
     if review
       if review.destroy

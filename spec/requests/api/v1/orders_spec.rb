@@ -155,7 +155,7 @@ RSpec.describe OrderService, type: :service do
     end
   end
 
-  describe ".get_all_orders" do
+  describe ".index_orders" do
     context "when user has orders" do
       let!(:order1) do
         user.orders.create!(
@@ -180,7 +180,7 @@ RSpec.describe OrderService, type: :service do
       end
 
       it "returns a success response with all user orders" do
-        response = OrderService.get_all_orders(valid_token)
+        response = OrderService.index_orders(valid_token)
 
         expect(response[:success]).to be true
         expect(response[:orders]).to be_present
@@ -191,7 +191,7 @@ RSpec.describe OrderService, type: :service do
 
     context "when user has no orders" do
       it "returns an error response" do
-        response = OrderService.get_all_orders(valid_token)
+        response = OrderService.index_orders(valid_token)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("No orders found")
@@ -201,14 +201,14 @@ RSpec.describe OrderService, type: :service do
     context "when token is invalid" do
       it "raises a NoMethodError due to unhandled nil token" do
         allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
-        expect { OrderService.get_all_orders("invalid.token") }.to raise_error(NoMethodError, /undefined method `\[\]' for nil/)
+        expect { OrderService.index_orders("invalid.token") }.to raise_error(NoMethodError, /undefined method `\[\]' for nil/)
       end
     end
 
     context "when user is not found" do
       it "returns an error response" do
         allow(JsonWebToken).to receive(:decode).with(valid_token).and_return({ "email" => "nonexistent@gmail.com" })
-        response = OrderService.get_all_orders(valid_token)
+        response = OrderService.index_orders(valid_token)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("User not found")

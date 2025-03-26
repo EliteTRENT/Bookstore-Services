@@ -3,47 +3,44 @@ Rails.application.routes.draw do
   mount Rswag::Api::Engine => "/swagger"
   namespace :api do
     namespace :v1 do
-      post "users/signup" => "users#signup"
+      post "users" => "users#signup"
       post "users/login" => "users#login"
-      post "users/forget" => "users#forgetPassword"
-      post "users/reset/:id" => "users#resetPassword"
+      post "users/password/forgot" => "users#forgot_password"
+      post "users/password/reset/:id" => "users#reset_password"
 
+      post "wishlists" => "wishlists#create"
+      get "wishlists" => "wishlists#index"
+      patch "wishlists/:wishlist_id" => "wishlists#mark_book_as_deleted"
 
-      post "wishlists/add" => "wishlists#addBook"
-      get "wishlists/getAll" => "wishlists#getAll"
-      delete "wishlists/destroy/:book_id" => "wishlists#destroy"
-      delete "wishlists/destroyByWishlistId/:wishlist_id" => "wishlists#destroyByWishlistId"
-
-      post "books/create" => "books#create"
-      patch "books/update/:id" => "books#update"
-      get "books" => "books#index"
-      get "books/show/:id" => "books#show"
-      patch "books/toggle_delete/:id" => "books#toggle_delete"
-      delete "books/:id" => "books#destroy"
+      post "books" => "books#create"
       get "books/search_suggestions" => "books#search_suggestions"
       get "books/stock" => "books#stock"
+      patch "books/:id" => "books#update"
+      get "books" => "books#index"
+      get "books/:id" => "books#show"
+      patch "books/delete/:id" => "books#toggle_delete"
+      delete "books/:id" => "books#destroy"
 
-      post "reviews/add" => "reviews#add_review"
-      get "reviews/:book_id" => "reviews#get_reviews"
-      delete "reviews/:id" => "reviews#delete_review"
+      post "reviews" => "reviews#create"
+      get "reviews/:book_id" => "reviews#show"
+      delete "reviews/:id" => "reviews#destroy"
 
-      post "addresses/add" => "addresses#create"
-      get "addresses/list" => "addresses#index"
-      patch "addresses/update/:id" => "addresses#update"
-      delete "addresses/remove/:id" => "addresses#destroy"
+      post "addresses" => "addresses#create"
+      get "addresses" => "addresses#index"
+      patch "addresses/:id" => "addresses#update"
+      delete "addresses/:id" => "addresses#destroy"
 
-      post "orders/create" => "orders#create"
+      post "orders" => "orders#create"
       get "orders" => "orders#index"
       get "orders/:id" => "orders#show"
-      patch "orders/update_status/:id" => "orders#update_status"
+      patch "orders/:id" => "orders#update_status"
 
-      post "carts/add" => "carts#add_book"
+      post "carts" => "carts#create"
       get "carts/:user_id" => "carts#get_cart"
-      delete "remove_book/:id" => "carts#soft_delete_book"
-      patch "carts/update_quantity" => "carts#update_quantity"
+      delete "carts/:book_id" => "carts#soft_delete_book"
+      patch "carts" => "carts#update_quantity"
 
-      # Facebook and Google SignUp
-      post "google_auth", to: "google_auth#create"
+      post "google_auth" => "google_auth#create"
       # post 'facebook_auth', to: 'facebook_auth#create
     end
   end

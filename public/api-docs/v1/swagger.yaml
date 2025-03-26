@@ -11,7 +11,7 @@ components:
       bearerFormat: JWT
       description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
 paths:
-  /api/v1/users/signup:
+  /api/v1/users:
     post:
       summary: User Signup
       description: Creates a new user account.
@@ -140,7 +140,7 @@ paths:
                 example:
                   errors: "Wrong Password"
 
-  /api/v1/users/forget:
+  /api/v1/users/password/forgot:
     post:
       summary: Forget Password
       description: Initiates a password reset by sending an OTP to the user's registered email via RabbitMQ.
@@ -262,7 +262,7 @@ paths:
                     value:
                       errors: "Password can't be blank"
 
-  /api/v1/books/create:
+  /api/v1/books:
     post:
       summary: Create Book
       description: Creates a new book with the provided details
@@ -624,7 +624,7 @@ paths:
                   value:
                     errors: "Error retrieving suggestions: some error message"
 
-  /api/v1/wishlists/add:
+  /api/v1/wishlists:
     post:
       summary: Add Book to Wishlist
       description: Adds a book to the authenticated user's wishlist.
@@ -704,7 +704,7 @@ paths:
                       type: string
                     example: ["Book is already in your wishlist"]
 
-  /api/v1/wishlists/getAll:
+  /api/v1/wishlists:
     get:
       summary: Get All Wishlist Items
       description: Retrieves all active books in the authenticated user's wishlist.
@@ -771,7 +771,7 @@ paths:
                     type: string
                     example: "User not found"
 
-  /api/v1/wishlists/destroy/{book_id}:
+  /api/v1/wishlists/mark_wishlist_as_deleted/{book_id}:
     delete:
       summary: Remove Book from Wishlist
       description: Marks a book as deleted in the authenticated user's wishlist.
@@ -1189,7 +1189,7 @@ paths:
               example:
                 errors: "Book not found"
 
-  /api/v1/reviews/add:
+  /api/v1/reviews:
     post:
       summary: Add a Review
       description: Allows a user to add a review for a book.
@@ -1360,7 +1360,7 @@ paths:
                     type: string
                     example: "Review not found"
 
-  /api/v1/addresses/list:
+  /api/v1/addresses:
     get:
       summary: List Addresses
       description: Retrieves all addresses for the authenticated user.
@@ -1442,7 +1442,7 @@ paths:
                     type: string
                     example: "Unauthorized"
 
-  /api/v1/addresses/add:
+  /api/v1/addresses:
     post:
       summary: Add Address
       description: Adds a new address for the authenticated user.
@@ -1748,7 +1748,7 @@ paths:
                     type: string
                     example: "Address not found"
 
-  /api/v1/orders/create:
+  /api/v1/orders:
     post:
       summary: Create Order
       description: Places an order for a book.
@@ -1857,7 +1857,7 @@ paths:
                       type: string
                     example: ["Quantity must be greater than 0"]
 
-  /api/v1/carts/add:
+  /api/v1/carts:
     post:
       summary: Add Book to Cart
       description: Adds a book to the authenticated user's cart. If the book already exists in the cart and is not deleted, the quantity is updated. Requires authentication via Bearer token.
