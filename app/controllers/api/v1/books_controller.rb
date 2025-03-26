@@ -1,18 +1,18 @@
 class Api::V1::BooksController < ApplicationController
-  before_action :authenticate_request
+  # Apply authentication to all actions except 'index' and 'search_suggestions'
+  before_action :authenticate_request, except: [ :index, :search_suggestions, :show ]
 
   def create
-    # Check if a file is uploaded (CSV case) or book params are provided (single book case)
     if params[:books].present?
-      result = BookService.create_book(file: params[:books]) # Pass the uploaded file directly
+      result = BookService.create_book(file: params[:books])
     else
-      result = BookService.create_book(book_params) # Use book_params for single book
+      result = BookService.create_book(book_params)
     end
 
     if result[:success]
-      if result[:books] # CSV case
+      if result[:books]
         render json: { message: result[:message], books: result[:books] }, status: :created
-      else # Single book case
+      else
         render json: { message: result[:message], book: result[:book] }, status: :created
       end
     else
