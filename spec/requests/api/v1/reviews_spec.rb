@@ -87,7 +87,7 @@ RSpec.describe ReviewService, type: :service do
     end
   end
 
-  describe ".index" do
+  describe ".show" do
     context "when reviews exist for the book" do
       before do
         ReviewService.create(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
@@ -95,7 +95,7 @@ RSpec.describe ReviewService, type: :service do
       end
 
       it "returns all reviews for the given book" do
-        result = ReviewService.index(book.id)
+        result = ReviewService.show(book.id)
 
         expect(result).to include(:reviews, :average_rating, :total_reviews)
 
@@ -106,14 +106,14 @@ RSpec.describe ReviewService, type: :service do
         expect(result[:reviews]).to be_an(Array)
         expect(result[:reviews].size).to eq(2)
 
-        review_ratings = result[:reviews].map { |r| r["rating"] || r[:rating] }
-        expect(review_ratings).to match_array([ 5, 4 ])
+        review_ratings = result[:reviews].map { |r| r[:rating] }
+        expect(review_ratings).to match_array([5, 4])
       end
     end
 
     context "when no reviews exist for the book" do
       it "returns an empty array with default values" do
-        result = ReviewService.index(book.id)
+        result = ReviewService.show(book.id)
 
         expect(result).to include(:reviews, :average_rating, :total_reviews)
         expect(result[:reviews]).to eq([])
@@ -124,7 +124,7 @@ RSpec.describe ReviewService, type: :service do
 
     context "when an invalid book_id is provided" do
       it "returns an empty array with default values" do
-        result = ReviewService.index(-1) # Invalid book_id
+        result = ReviewService.show(-1) # Invalid book_id
 
         expect(result).to include(:reviews, :average_rating, :total_reviews)
         expect(result[:reviews]).to eq([])

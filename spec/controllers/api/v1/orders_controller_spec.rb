@@ -86,7 +86,7 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
   describe "GET #index" do
     context "with valid token" do
       before do
-        allow(OrderService).to receive(:get_all_orders).with(valid_token).and_return(
+        allow(OrderService).to receive(:index_orders).with(valid_token).and_return(
           { success: true, orders: [order] }
         )
       end
@@ -103,7 +103,7 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
 
     context "with invalid token" do
       before do
-        allow(OrderService).to receive(:get_all_orders).with(invalid_token).and_return(
+        allow(OrderService).to receive(:index_orders).with(invalid_token).and_return(
           { success: false, error: "Invalid token" }
         )
       end
@@ -119,7 +119,7 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
 
     context "with no orders" do
       before do
-        allow(OrderService).to receive(:get_all_orders).with(valid_token).and_return(
+        allow(OrderService).to receive(:index_orders).with(valid_token).and_return(
           { success: false, error: "No orders found" }
         )
       end

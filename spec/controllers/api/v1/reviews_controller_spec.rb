@@ -52,7 +52,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
     Book.delete_all
   end
 
-  describe "POST #add_review" do
+  describe "POST #create" do
     context "when user is authenticated" do
       before do
         # Mock authenticate_request to simulate successful authentication
@@ -61,7 +61,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
 
       context "with valid parameters" do
         it "creates a new review and returns a success response" do
-          post :add_review, params: valid_review_params, as: :json
+          post :create, params: valid_review_params, as: :json
 
           expect(response).to have_http_status(:created)
           json_response = JSON.parse(response.body)
@@ -73,7 +73,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
 
       context "with invalid parameters" do
         it "returns an error response" do
-          post :add_review, params: invalid_review_params, as: :json
+          post :create, params: invalid_review_params, as: :json
 
           expect(response).to have_http_status(:unprocessable_entity)
           json_response = JSON.parse(response.body)
@@ -83,12 +83,8 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
     end
 
     context "when user is not authenticated" do
-      before do
-        # No need to mock authenticate_request; let it run and render its default response
-      end
-
       it "does not allow access and returns unauthorized with 'Missing token'" do
-        post :add_review, params: valid_review_params, as: :json
+        post :create, params: valid_review_params, as: :json
         expect(response).to have_http_status(:unauthorized)
         json_response = JSON.parse(response.body)
         expect(json_response["error"]).to eq("Missing token")
@@ -96,7 +92,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
     end
   end
 
-  describe "GET #get_reviews" do
+  describe "GET #show" do
     before do
       # Create test reviews manually
       Review.create!(user: user, book: book, rating: 5, comment: "Amazing!")
@@ -114,7 +110,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
     end
 
     it "returns all reviews for a given book" do
-      get :get_reviews, params: { book_id: book.id }, as: :json
+      get :show, params: { book_id: book.id }, as: :json
 
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)["data"]
@@ -125,7 +121,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
 
     it "returns empty reviews when no reviews exist" do
       Review.delete_all # Clear reviews for this test
-      get :get_reviews, params: { book_id: book.id }, as: :json
+      get :show, params: { book_id: book.id }, as: :json
 
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)["data"]
@@ -135,7 +131,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
     end
   end
 
-  describe "DELETE #delete_review" do
+  describe "DELETE #destroy" do
     let(:review) { Review.create!(user: user, book: book, rating: 4, comment: "Nice book") }
 
     context "when user is authenticated" do
@@ -146,7 +142,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
 
       context "when review exists and belongs to the user" do
         it "deletes the review and returns a success response" do
-          delete :delete_review, params: { id: review.id, user_id: user.id }, as: :json
+          delete :destroy, params: { id: review.id, user_id: user.id }, as: :json
 
           expect(response).to have_http_status(:ok)
           json_response = JSON.parse(response.body)
@@ -157,7 +153,7 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
 
       context "when review does not exist or does not belong to the user" do
         it "returns an error response" do
-          delete :delete_review, params: { id: 999, user_id: user.id }, as: :json
+          delete :destroy, params: { id: 999, user_id: user.id }, as: :json
 
           expect(response).to have_http_status(:unprocessable_entity)
           json_response = JSON.parse(response.body)
@@ -167,12 +163,8 @@ RSpec.describe Api::V1::ReviewsController, type: :controller do
     end
 
     context "when user is not authenticated" do
-      before do
-        # No need to mock authenticate_request; let it run and render its default response
-      end
-
       it "does not allow access and returns unauthorized with 'Missing token'" do
-        delete :delete_review, params: { id: review.id, user_id: user.id }, as: :json
+        delete :destroy, params: { id: review.id, user_id: user.id }, as: :json
         expect(response).to have_http_status(:unauthorized)
         json_response = JSON.parse(response.body)
         expect(json_response["error"]).to eq("Missing token")

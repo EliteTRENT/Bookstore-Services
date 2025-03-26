@@ -125,12 +125,12 @@ RSpec.describe CartService, type: :service do
 
       it 'returns an error when cart save fails unexpectedly' do
         allow_any_instance_of(Cart).to receive(:save).and_return(false)
-        allow_any_instance_of(Cart).to receive(:errors).and_return(double(full_messages: [ 'Save failed' ]))
+        allow_any_instance_of(Cart).to receive(:errors).and_return(double(full_messages: ['Save failed']))
         cart_params = { user_id: user.id, book_id: book.id, quantity: 1 }
         result = CartService.create(cart_params)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq([ 'Save failed' ])
+        expect(result[:error]).to eq(['Save failed'])
       end
     end
   end
@@ -167,7 +167,7 @@ RSpec.describe CartService, type: :service do
         result = CartService.get_cart(user.id)
 
         expect(result[:success]).to be_truthy
-        expect(result[:cart].first[:book_name]).to eq('Ruby on Rails Guide') # Fixed failing test
+        expect(result[:cart].first[:book_name]).to eq('Ruby on Rails Guide')
       end
 
       it 'excludes soft-deleted cart items' do
@@ -235,64 +235,64 @@ RSpec.describe CartService, type: :service do
   end
 
   describe '.soft_delete_book' do
-    context 'when book exists and is not soft deleted' do
-      it 'soft deletes the book successfully' do
-        result = CartService.soft_delete_book(book.id)
+    context 'when cart item exists and is not soft deleted' do
+      it 'soft deletes the cart item successfully' do
+        result = CartService.soft_delete_book(book.id, user.id)
 
         expect(result[:success]).to be_truthy
-        expect(result[:message]).to eq('Book soft deleted successfully')
+        expect(result[:message]).to eq('Book removed from cart')
         expect(result[:book].is_deleted).to be_truthy
       end
 
-      it 'returns the updated book object' do
-        result = CartService.soft_delete_book(book.id)
+      it 'returns the updated cart item object' do
+        result = CartService.soft_delete_book(book.id, user.id)
 
         expect(result[:success]).to be_truthy
-        expect(result[:book].id).to eq(book.id)
+        expect(result[:book].id).to eq(cart_item.id)
       end
     end
 
-    context 'when book does not exist or is already soft deleted' do
-      it 'returns an error for non-existent book' do
-        result = CartService.soft_delete_book(9999)
+    context 'when cart item does not exist or is already soft deleted' do
+      it 'returns an error for non-existent cart item' do
+        result = CartService.soft_delete_book(9999, user.id)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq('Book not found')
+        expect(result[:error]).to eq('Cart item not found')
       end
 
-      it 'returns an error for already soft-deleted book' do
-        book.update(is_deleted: true)
-        result = CartService.soft_delete_book(book.id)
+      it 'returns an error for already soft-deleted cart item' do
+        cart_item.update(is_deleted: true)
+        result = CartService.soft_delete_book(book.id, user.id)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq('Book not found')
+        expect(result[:error]).to eq('Cart item not found')
       end
 
       it 'handles nil book_id gracefully' do
-        result = CartService.soft_delete_book(nil)
+        result = CartService.soft_delete_book(nil, user.id)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq('Book not found')
+        expect(result[:error]).to eq('Cart item not found')
       end
     end
 
     context 'when an error occurs' do
       it 'handles database errors gracefully' do
-        allow(Book).to receive(:active).and_raise(StandardError.new('Database error'))
-        result = CartService.soft_delete_book(book.id)
+        allow(Cart).to receive(:find_by).and_raise(StandardError.new('Database error'))
+        result = CartService.soft_delete_book(book.id, user.id)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq('Error soft deleting book: Database error')
+        expect(result[:error]).to eq('Error updating cart item: Database error')
       end
 
       it 'returns an error if update fails' do
-        allow_any_instance_of(Book).to receive(:update).and_return(false)
-        allow_any_instance_of(Book).to receive(:errors).and_return(double(full_messages: [ 'Update failed' ]))
+        allow_any_instance_of(Cart).to receive(:update).and_return(false)
+        allow_any_instance_of(Cart).to receive(:errors).and_return(double(full_messages: ['Update failed']))
 
-        result = CartService.soft_delete_book(book.id)
+        result = CartService.soft_delete_book(book.id, user.id)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq([ 'Update failed' ])
+        expect(result[:error]).to eq(['Update failed'])
       end
     end
   end
