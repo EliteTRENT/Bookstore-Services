@@ -92,7 +92,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
         post :login, params: invalid_login_params
         expect(response).to have_http_status(:unprocessable_entity)
         json_response = JSON.parse(response.body)
-        expect(json_response["errors"]).to eq("Wrong password")
+        expect(json_response["errors"]).to eq("Wrong email or password")
       end
     end
 
