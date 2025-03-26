@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_22_052442) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_22_084642) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -87,6 +87,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_22_052442) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "google_id"
+    t.string "otp"
+    t.datetime "otp_expires_at"
   end
 
   create_table "wishlists", force: :cascade do |t|
