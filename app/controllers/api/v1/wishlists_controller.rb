@@ -1,5 +1,5 @@
 class Api::V1::WishlistsController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  before_action :authenticate_request
 
   def addBook
     token = request.headers["Authorization"]&.split(" ")&.last
@@ -19,12 +19,13 @@ class Api::V1::WishlistsController < ApplicationController
     token = request.headers["Authorization"]&.split(" ")&.last
     result = WishlistService.getAll(token)
     if result[:success]
-      render json: { message: result[:wishlists] }, status: :ok
+      render json: { message: result[:message] }, status: :ok
     elsif result[:error] == "Invalid token"
       render json: { error: result[:error] }, status: :unauthorized
     elsif result[:error] == "User not found"
       render json: { error: result[:error] }, status: :not_found
     else
+      # This else block should no longer be reached with the updated service
       render json: { errors: result[:error] }, status: :unprocessable_entity
     end
   end
@@ -32,6 +33,20 @@ class Api::V1::WishlistsController < ApplicationController
   def destroy
     token = request.headers["Authorization"]&.split(" ")&.last
     result = WishlistService.destroy(token, params[:book_id])
+    if result[:success]
+      render json: { message: result[:message] }, status: :ok
+    elsif result[:error] == "Invalid token"
+      render json: { error: result[:error] }, status: :unauthorized
+    elsif result[:error] == "User not found"
+      render json: { error: result[:error] }, status: :not_found
+    else
+      render json: { errors: result[:error] }, status: :not_found
+    end
+  end
+
+  def destroyByWishlistId
+    token = request.headers["Authorization"]&.split(" ")&.last
+    result = WishlistService.destroyByWishlistId(token, params[:wishlist_id])
     if result[:success]
       render json: { message: result[:message] }, status: :ok
     elsif result[:error] == "Invalid token"

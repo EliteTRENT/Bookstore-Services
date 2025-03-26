@@ -3,27 +3,6 @@ info:
   title: Book Store App
   version: 1.0.0
   description: API documentation for the Book Store app.
-
-servers:
-  - url: https://api.bookstore.com
-    description: Production server
-  - url: http://localhost:3000
-    description: Local development server
-
-tags:
-  - name: Users
-    description: Operations related to user management
-  - name: Books
-    description: Operations related to book management
-  - name: Wishlists
-    description: Operations related to user wishlists
-  - name: Reviews
-    description: Operations related to book reviews
-  - name: Carts
-    description: Operations related to user carts
-  - name: Addresses
-    description: Operations related to user addresses
-
 components:
   securitySchemes:
     BearerAuth:
@@ -31,123 +10,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer [space] your_token'."
-
-  schemas:
-    ErrorResponse:
-      type: object
-      properties:
-        errors:
-          type: array
-          items:
-            type: string
-            example: "Validation error"
-      required:
-        - errors
-
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 123
-        name:
-          type: string
-          example: "John Doe"
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        mobile_number:
-          type: string
-          example: "+919876543210"
-      required:
-        - id
-        - name
-        - email
-        - mobile_number
-
-    Book:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 1
-        name:
-          type: string
-          example: "The Great Gatsby"
-        author:
-          type: string
-          example: "F. Scott Fitzgerald"
-        mrp:
-          type: number
-          format: float
-          example: 20.99
-        discounted_price:
-          type: number
-          format: float
-          example: 15.99
-        quantity:
-          type: integer
-          example: 100
-        book_details:
-          type: string
-          nullable: true
-          example: "A story of the fabulously wealthy Jay Gatsby"
-        genre:
-          type: string
-          nullable: true
-          example: "Fiction"
-        book_image:
-          type: string
-          nullable: true
-          example: "http://example.com/book-cover.jpg"
-        is_deleted:
-          type: boolean
-          example: false
-      required:
-        - id
-        - name
-        - author
-        - mrp
-        - discounted_price
-        - quantity
-
-    Address:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 1
-        street:
-          type: string
-          example: "123 Main St"
-        city:
-          type: string
-          example: "Delhi"
-        state:
-          type: string
-          example: "DL"
-        zip_code:
-          type: string
-          example: "110001"
-        country:
-          type: string
-          example: "India"
-        type:
-          type: string
-          example: "home"
-          enum: ["home", "work", "other"]
-        is_default:
-          type: boolean
-          example: false
-      required:
-        - id
-        - street
-        - city
-        - state
-        - zip_code
-        - country
-
 paths:
   /api/v1/users/signup:
     post:
@@ -196,19 +58,33 @@ paths:
                     type: string
                     example: "User created successfully"
                   user:
-                    $ref: '#/components/schemas/User'
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 123
+                      name:
+                        type: string
+                        example: "John Doe"
+                      email:
+                        type: string
+                        format: email
+                        example: user@example.com
+                      mobile_number:
+                        type: string
+                        example: "+919876543210"
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Email can't be blank"
 
   /api/v1/users/login:
     post:
@@ -256,13 +132,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Email is not registered"
+                example:
+                  errors: "Wrong Password"
 
   /api/v1/users/forget:
     post:
@@ -312,13 +188,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Email is not registered"
+                example:
+                  errors: "Failed to send OTP, please try again"
 
   /api/v1/users/reset/{id}:
     post:
@@ -370,22 +246,28 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "User not found"
+                examples:
+                  user_not_found:
+                    value:
+                      errors: "User not found"
+                  invalid_otp:
+                    value:
+                      errors: "Invalid or expired OTP"
+                  validation_error:
+                    value:
+                      errors: "Password can't be blank"
 
   /api/v1/books/create:
     post:
       summary: Create Book
-      description: Creates a new book with the provided details.
+      description: Creates a new book with the provided details
       tags:
         - Books
-      security:
-        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -400,36 +282,44 @@ paths:
                       type: string
                       example: "The Great Gatsby"
                       minLength: 1
+                      description: "Book title (required)"
                     author:
                       type: string
                       example: "F. Scott Fitzgerald"
                       minLength: 1
+                      description: "Author name (required)"
                     mrp:
                       type: number
                       format: float
                       minimum: 0
                       example: 20.99
+                      description: "Maximum retail price (must be >= 0)"
                     discounted_price:
                       type: number
                       format: float
                       minimum: 0
                       example: 15.99
+                      description: "Discounted price (must be >= 0)"
                     quantity:
                       type: integer
                       minimum: 0
                       example: 100
+                      description: "Stock quantity (must be integer >= 0)"
                     book_details:
                       type: string
                       nullable: true
                       example: "A story of the fabulously wealthy Jay Gatsby"
+                      description: "Additional book details (optional)"
                     genre:
                       type: string
                       nullable: true
                       example: "Fiction"
+                      description: "Book genre (optional)"
                     book_image:
                       type: string
                       nullable: true
                       example: "http://example.com/book-cover.jpg"
+                      description: "URL to book cover image (optional)"
                   required:
                     - name
                     - author
@@ -448,47 +338,105 @@ paths:
                     type: string
                     example: "Book created successfully"
                   book:
-                    $ref: '#/components/schemas/Book'
-        "401":
-          description: Unauthorized - Token missing or invalid
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "400":
+          description: Invalid request or book already in wishlist
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Invalid request"
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      missing_fields:
+                        value: ["Name can't be blank", "Author can't be blank"]
+                      invalid_numbers:
+                        value: ["Mrp must be greater than or equal to 0"]
+                      invalid_quantity:
+                        value: ["Quantity must be an integer"]
+        "401":
+          description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
 
+  /api/v1/books:
     get:
       summary: Get All Books
-      description: Retrieves a list of all non-deleted books, ordered by creation date (newest first).
+      description: Retrieves a paginated list of all non-deleted books, ordered by creation date (newest first)
       tags:
         - Books
       parameters:
         - name: page
           in: query
-          description: Page number for pagination
+          required: false
+          description: Page number for pagination (default:1)
           schema:
             type: integer
+            example: 1
             default: 1
         - name: per_page
           in: query
-          description: Number of items per page
+          required: false
+          description: Number of books per page (default:10)
           schema:
             type: integer
+            example: 10
             default: 10
       responses:
         "200":
-          description: Books retrieved successfully
+          description: Books retrieved successfully (returns array even if empty)
           content:
             application/json:
               schema:
@@ -500,129 +448,124 @@ paths:
                   books:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Book'
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: "The Great Gatsby"
+                        author:
+                          type: string
+                          example: "F. Scott Fitzgerald"
+                        mrp:
+                          type: number
+                          format: float
+                          example: 20.99
+                        discounted_price:
+                          type: number
+                          format: float
+                          example: 15.99
+                        quantity:
+                          type: integer
+                          example: 100
+                        book_details:
+                          type: string
+                          nullable: true
+                          example: "A story of the fabulously wealthy Jay Gatsby"
+                        genre:
+                          type: string
+                          nullable: true
+                          example: "Fiction"
+                        book_image:
+                          type: string
+                          nullable: true
+                          example: "http://example.com/book-cover.jpg"
+                  pagination:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                        example: 1
+                      per_page:
+                        type: integer
+                        example: 10
+                      total_pages:
+                        type: integer
+                        example: 5
+                      total_count:
+                        type: integer
+                        example: 50
+              examples:
+                with_books:
+                  summary: Successful response with books
+                  value:
+                    message: "Books retrieved successfully"
+                    books:
+                      - id: 1
+                        name: "The Great Gatsby"
+                        author: "F. Scott Fitzgerald"
+                        mrp: 20.99
+                        discounted_price: 15.99
+                        quantity: 100
+                        book_details: "A story of the fabulously wealthy Jay Gatsby"
+                        genre: "Fiction"
+                        book_image: "http://example.com/book-cover.jpg"
+                      - id: 2
+                        name: "1984"
+                        author: "George Orwell"
+                        mrp: 15.99
+                        discounted_price: 12.99
+                        quantity: 50
+                        book_details: "A dystopian novel"
+                        genre: "Science Fiction"
+                        book_image: "http://example.com/1984-cover.jpg"
+                    pagination:
+                      current_page: 1
+                      per_page: 10
+                      total_pages: 5
+                      total_count: 50
+                no_books:
+                  summary: Successful response with no books
+                  value:
+                    message: "No books available"
+                    books: []
+                    pagination:
+                      current_page: 1
+                      per_page: 10
+                      total_pages: 0
+                      total_count: 0
         "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/books/update/{id}:
-    patch:
-      summary: Update Book
-      description: Updates an existing book with the provided details.
-      tags:
-        - Books
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The ID of the book to update
-          schema:
-            type: integer
-            example: 1
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                book:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                      example: "The Great Gatsby"
-                      minLength: 1
-                    author:
-                      type: string
-                      example: "F. Scott Fitzgerald"
-                      minLength: 1
-                    mrp:
-                      type: number
-                      format: float
-                      minimum: 0
-                      example: 20.99
-                    discounted_price:
-                      type: number
-                      format: float
-                      minimum: 0
-                      example: 15.99
-                    quantity:
-                      type: integer
-                      minimum: 0
-                      example: 100
-                    book_details:
-                      type: string
-                      nullable: true
-                      example: "A story of the fabulously wealthy Jay Gatsby"
-                    genre:
-                      type: string
-                      nullable: true
-                      example: "Fiction"
-                    book_image:
-                      type: string
-                      nullable: true
-                      example: "http://example.com/book-cover.jpg"
-      responses:
-        "200":
-          description: Book successfully updated
+          description: Internal Server Error - Database or server failure
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  errors:
                     type: string
-                    example: "Book updated successfully"
-                  book:
-                    $ref: '#/components/schemas/Book'
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "422":
-          description: Validation error or book not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                    example: "Internal server error occurred while retrieving books"
+              example:
+                errors: "Internal server error occurred while retrieving books"
 
-  /api/v1/books/show/{id}:
+  /api/v1/books/search_suggestions:
     get:
-      summary: Get Book by ID
-      description: Retrieves a specific book by its ID, if it exists and is not deleted.
+      summary: Search Suggestions
+      description: Retrieves search suggestions based on a query string for book names, authors, or genres
       tags:
         - Books
       parameters:
-        - name: id
-          in: path
+        - name: query
+          in: query
           required: true
-          description: The ID of the book to retrieve
+          description: The search query to generate suggestions
           schema:
-            type: integer
-            example: 1
+            type: string
+            example: "Gatsby"
       responses:
         "200":
-          description: Book retrieved successfully
+          description: Search suggestions retrieved successfully
           content:
             application/json:
               schema:
@@ -630,115 +573,56 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Book retrieved successfully"
-                  book:
-                    $ref: '#/components/schemas/Book'
-        "404":
-          description: Book not found or has been deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/books/toggle_delete/{id}:
-    patch:
-      summary: Toggle Delete Status of a Book
-      description: Toggles the delete status of a book (marks as deleted or restores it) by its ID.
-      tags:
-        - Books
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The ID of the book to toggle delete status
-          schema:
-            type: integer
-            example: 1
-      responses:
-        "200":
-          description: Book delete status toggled successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Book marked as deleted"
-                  book:
-                    $ref: '#/components/schemas/Book'
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                    example: "Search suggestions retrieved successfully"
+                  suggestions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: "The Great Gatsby"
+                        author:
+                          type: string
+                          example: "F. Scott Fitzgerald"
+                        genre:
+                          type: string
+                          nullable: true
+                          example: "Fiction"
+              examples:
+                with_suggestions:
+                  summary: Successful response with suggestions
+                  value:
+                    message: "Search suggestions retrieved successfully"
+                    suggestions:
+                      - name: "The Great Gatsby"
+                        author: "F. Scott Fitzgerald"
+                        genre: "Fiction"
+                      - name: "Gatsby's Adventure"
+                        author: "Jane Doe"
+                        genre: "Fiction"
+                no_suggestions:
+                  summary: Successful response with no suggestions
+                  value:
+                    message: "Search suggestions retrieved successfully"
+                    suggestions: []
         "422":
-          description: Book not found or update failed due to validation errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/books/{id}:
-    delete:
-      summary: Hard Delete a Book
-      description: Permanently deletes a book by its ID from the database.
-      tags:
-        - Books
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The ID of the book to delete
-          schema:
-            type: integer
-            example: 1
-      responses:
-        "200":
-          description: Book permanently deleted
+          description: Validation error (query missing or error retrieving suggestions)
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  errors:
                     type: string
-                    example: "Book permanently deleted"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "404":
-          description: Book not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                    example: "Query parameter is required"
+              examples:
+                missing_query:
+                  value:
+                    errors: "Query parameter is required"
+                error:
+                  value:
+                    errors: "Error retrieving suggestions: some error message"
 
   /api/v1/wishlists/add:
     post:
@@ -748,6 +632,14 @@ paths:
         - Wishlists
       security:
         - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       requestBody:
         required: true
         content:
@@ -761,6 +653,7 @@ paths:
                     book_id:
                       type: integer
                       example: 456
+                      description: "The ID of the book to add to the wishlist"
                   required:
                     - book_id
       responses:
@@ -779,25 +672,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
         "404":
           description: User or Book not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    examples:
+                      user_not_found:
+                        value: "User not found"
+                      book_not_found:
+                        value: "Book not found"
         "422":
           description: Validation error or book already in wishlist
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Book is already in your wishlist"]
 
   /api/v1/wishlists/getAll:
     get:
@@ -807,6 +712,14 @@ paths:
         - Wishlists
       security:
         - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       responses:
         "200":
           description: Wishlist retrieved successfully
@@ -823,29 +736,42 @@ paths:
                         book_id:
                           type: integer
                           example: 456
-                        book_name:
-                          type: string
-                          example: "Test Book"
+                        user_id:
+                          type: integer
+                          example: 12
+              examples:
+                with_items:
+                  summary: Wishlist with items
+                  value:
+                    message:
+                      - book_id: 456
+                        user_id: 12
+                empty_wishlist:
+                  summary: Empty wishlist
+                  value:
+                    message: []
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
         "404":
           description: User not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
 
-  /api/v1/wishlists/delete/{book_id}:
+  /api/v1/wishlists/destroy/{book_id}:
     delete:
       summary: Remove Book from Wishlist
       description: Marks a book as deleted in the authenticated user's wishlist.
@@ -854,6 +780,13 @@ paths:
       security:
         - BearerAuth: []
       parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: book_id
           in: path
           required: true
@@ -877,19 +810,384 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
         "404":
           description: User not found or book not in wishlist
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    examples:
+                      user_not_found:
+                        value: "User not found"
+                      book_not_found:
+                        value: "Book not found in wishlist"
+
+  /api/v1/books/update/{id}:
+    patch:
+      summary: Update Book
+      description: Updates an existing book with the provided details
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to update
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                book:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "The Great Gatsby"
+                      minLength: 1
+                      description: "Book title"
+                    author:
+                      type: string
+                      example: "F. Scott Fitzgerald"
+                      minLength: 1
+                      description: "Author name"
+                    mrp:
+                      type: number
+                      format: float
+                      minimum: 0
+                      example: 20.99
+                      description: "Maximum retail price (must be >= 0)"
+                    discounted_price:
+                      type: number
+                      format: float
+                      minimum: 0
+                      example: 15.99
+                      description: "Discounted price (must be >= 0)"
+                    quantity:
+                      type: integer
+                      minimum: 0
+                      example: 100
+                      description: "Stock quantity (must be integer >= 0)"
+                    book_details:
+                      type: string
+                      nullable: true
+                      example: "A story of the fabulously wealthy Jay Gatsby"
+                      description: "Additional book details (optional)"
+                    genre:
+                      type: string
+                      nullable: true
+                      example: "Fiction"
+                      description: "Book genre (optional)"
+                    book_image:
+                      type: string
+                      nullable: true
+                      example: "http://example.com/book-cover.jpg"
+                      description: "URL to book cover image (optional)"
+      responses:
+        "200":
+          description: Book successfully updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book updated successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "422":
+          description: Validation error or book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      not_found:
+                        value: ["Book not found or has been deleted"]
+                      validation_errors:
+                        value: ["Name can't be blank", "Mrp must be greater than or equal to 0"]
+
+  /api/v1/books/show/{id}:
+    get:
+      summary: Get Book by ID
+      description: Retrieves a specific book by its ID, if it exists and is not deleted
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to retrieve
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book retrieved successfully"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+        "404":
+          description: Book not found or has been deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found or has been deleted"
+              example:
+                errors: "Book not found or has been deleted"
+
+  /api/v1/books/toggle_delete/{id}:
+    patch:
+      summary: Toggle Delete Status of a Book
+      description: Toggles the delete status of a book (marks as deleted or restores it) by its ID
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to toggle delete status
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book delete status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book marked as deleted"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "The Great Gatsby"
+                      author:
+                        type: string
+                        example: "F. Scott Fitzgerald"
+                      mrp:
+                        type: number
+                        format: float
+                        example: 20.99
+                      discounted_price:
+                        type: number
+                        format: float
+                        example: 15.99
+                      quantity:
+                        type: integer
+                        example: 100
+                      book_details:
+                        type: string
+                        nullable: true
+                        example: "A story of the fabulously wealthy Jay Gatsby"
+                      genre:
+                        type: string
+                        nullable: true
+                        example: "Fiction"
+                      book_image:
+                        type: string
+                        nullable: true
+                        example: "http://example.com/book-cover.jpg"
+                      is_deleted:
+                        type: boolean
+                        example: true
+              examples:
+                marked_as_deleted:
+                  summary: Book marked as deleted
+                  value:
+                    message: "Book marked as deleted"
+                    book:
+                      id: 1
+                      name: "The Great Gatsby"
+                      author: "F. Scott Fitzgerald"
+                      mrp: 20.99
+                      discounted_price: 15.99
+                      quantity: 100
+                      book_details: "A story of the fabulously wealthy Jay Gatsby"
+                      genre: "Fiction"
+                      book_image: "http://example.com/book-cover.jpg"
+                      is_deleted: true
+                restored:
+                  summary: Book restored
+                  value:
+                    message: "Book restored"
+                    book:
+                      id: 1
+                      name: "The Great Gatsby"
+                      author: "F. Scott Fitzgerald"
+                      mrp: 20.99
+                      discounted_price: 15.99
+                      quantity: 100
+                      book_details: "A story of the fabulously wealthy Jay Gatsby"
+                      genre: "Fiction"
+                      book_image: "http://example.com/book-cover.jpg"
+                      is_deleted: false
+        "422":
+          description: Book not found or update failed due to validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    oneOf:
+                      - type: string
+                      - type: array
+                        items:
+                          type: string
+              examples:
+                not_found:
+                  summary: Book not found
+                  value:
+                    errors: "Book not found"
+                validation_error:
+                  summary: Validation error
+                  value:
+                    errors: ["Some validation error"]
+
+  /api/v1/books/{id}:
+    delete:
+      summary: Hard Delete a Book
+      description: Permanently deletes a book by its ID from the database
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to delete
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book permanently deleted"
+              example:
+                message: "Book permanently deleted"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found"
+              example:
+                errors: "Book not found"
 
   /api/v1/reviews/add:
     post:
@@ -917,8 +1215,6 @@ paths:
                       example: 5
                     rating:
                       type: integer
-                      minimum: 1
-                      maximum: 5
                       example: 4
                     comment:
                       type: string
@@ -957,24 +1253,18 @@ paths:
                       comment:
                         type: string
                         example: "Great book! Highly recommend."
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Rating can't be blank"
 
   /api/v1/reviews/{book_id}:
     get:
@@ -1026,13 +1316,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Book not found"
 
   /api/v1/reviews/{id}:
     delete:
@@ -1061,247 +1349,16 @@ paths:
                   message:
                     type: string
                     example: "Review deleted successfully"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Review not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/carts/add:
-    post:
-      summary: Add Book to Cart
-      description: Adds a book to the authenticated user's cart. If the book already exists in the cart, the quantity is updated.
-      tags:
-        - Carts
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                cart:
-                  type: object
-                  properties:
-                    user_id:
-                      type: integer
-                      example: 1
-                    book_id:
-                      type: integer
-                      example: 456
-                    quantity:
-                      type: integer
-                      minimum: 1
-                      example: 2
-                  required:
-                    - user_id
-                    - book_id
-                    - quantity
-      responses:
-        "201":
-          description: Book successfully added to or updated in the cart
-          content:
-            application/json:
-              schema:
                 type: object
                 properties:
-                  message:
+                  error:
                     type: string
-                    example: "Book added to cart"
-                  cart:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      user_id:
-                        type: integer
-                        example: 1
-                      book_id:
-                        type: integer
-                        example: 456
-                      quantity:
-                        type: integer
-                        example: 2
-                      is_deleted:
-                        type: boolean
-                        example: false
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "422":
-          description: Validation error (unprocessable entity)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/carts/{user_id}:
-    get:
-      summary: Get User Cart
-      description: Retrieves all active items in the authenticated user's cart, including book details and quantities.
-      tags:
-        - Carts
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          description: ID of the user whose cart is being retrieved
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Cart retrieved successfully (returns array even if empty)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Cart retrieved successfully"
-                  cart:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        cart_id:
-                          type: integer
-                          example: 1
-                        book_id:
-                          type: integer
-                          example: 456
-                        book_name:
-                          type: string
-                          example: "Ruby on Rails Guide"
-                        quantity:
-                          type: integer
-                          example: 2
-                        price:
-                          type: number
-                          format: float
-                          example: 800.0
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "422":
-          description: Validation error or error retrieving cart
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/remove_book/{id}:
-    delete:
-      summary: Soft Delete a Book from Cart
-      description: Soft deletes a book from the cart by marking it as deleted with a timestamp, keeping it in the database.
-      tags:
-        - Carts
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The ID of the cart item to soft delete
-          schema:
-            type: integer
-            example: 1
-      responses:
-        "200":
-          description: Book soft deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Book soft deleted successfully"
-                  cart:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      user_id:
-                        type: integer
-                        example: 1
-                      book_id:
-                        type: integer
-                        example: 456
-                      quantity:
-                        type: integer
-                        example: 2
-                      is_deleted:
-                        type: boolean
-                        example: true
-                      deleted_at:
-                        type: string
-                        format: date-time
-                        example: "2025-03-10T12:00:00Z"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "404":
-          description: Cart item not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "422":
-          description: Error during soft deletion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                    example: "Review not found"
 
   /api/v1/addresses/list:
     get:
@@ -1311,6 +1368,14 @@ paths:
         - Addresses
       security:
         - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       responses:
         "200":
           description: Addresses retrieved successfully
@@ -1322,19 +1387,60 @@ paths:
                   addresses:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Address'
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        street:
+                          type: string
+                          example: "123 Main St"
+                        city:
+                          type: string
+                          example: "Delhi"
+                        state:
+                          type: string
+                          example: "DL"
+                        zip_code:
+                          type: string
+                          example: "110001"
+                        country:
+                          type: string
+                          example: "India"
+                        type:
+                          type: string
+                          example: "home"
+                          enum: ["home", "work", "other"]
+                        is_default:
+                          type: boolean
+                          example: false
+              examples:
+                with_addresses:
+                  summary: Successful response with addresses
+                  value:
+                    addresses:
+                      - id: 1
+                        street: "123 Main St"
+                        city: "Delhi"
+                        state: "DL"
+                        zip_code: "110001"
+                        country: "India"
+                        type: "home"
+                        is_default: false
+                no_addresses:
+                  summary: Successful response with no addresses
+                  value:
+                    addresses: []
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
 
   /api/v1/addresses/add:
     post:
@@ -1344,6 +1450,14 @@ paths:
         - Addresses
       security:
         - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       requestBody:
         required: true
         content:
@@ -1394,25 +1508,59 @@ paths:
                     type: string
                     example: "Address added successfully"
                   address:
-                    $ref: '#/components/schemas/Address'
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      street:
+                        type: string
+                        example: "123 Main St"
+                      city:
+                        type: string
+                        example: "Delhi"
+                      state:
+                        type: string
+                        example: "DL"
+                      zip_code:
+                        type: string
+                        example: "110001"
+                      country:
+                        type: string
+                        example: "India"
+                      type:
+                        type: string
+                        example: "home"
+                        enum: ["home", "work", "other"]
+                      is_default:
+                        type: boolean
+                        example: false
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      missing_fields:
+                        value: ["Street can't be blank", "City can't be blank"]
+                      invalid_type:
+                        value: ["Type is not included in the list"]
 
   /api/v1/addresses/update/{id}:
     patch:
@@ -1423,6 +1571,13 @@ paths:
       security:
         - BearerAuth: []
       parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: id
           in: path
           required: true
@@ -1474,31 +1629,69 @@ paths:
                     type: string
                     example: "Address updated successfully"
                   address:
-                    $ref: '#/components/schemas/Address'
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      street:
+                        type: string
+                        example: "456 New St"
+                      city:
+                        type: string
+                        example: "Mumbai"
+                      state:
+                        type: string
+                        example: "MH"
+                      zip_code:
+                        type: string
+                        example: "400001"
+                      country:
+                        type: string
+                        example: "India"
+                      type:
+                        type: string
+                        example: "work"
+                        enum: ["home", "work", "other"]
+                      is_default:
+                        type: boolean
+                        example: true
         "401":
           description: Unauthorized - Token missing or invalid
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Address not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Address not found"
         "422":
           description: Validation error (unprocessable entity)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    examples:
+                      validation_errors:
+                        value: ["Street can't be blank"]
+                      invalid_type:
+                        value: ["Type is not included in the list"]
 
   /api/v1/addresses/remove/{id}:
     delete:
@@ -1509,6 +1702,13 @@ paths:
       security:
         - BearerAuth: []
       parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: id
           in: path
           required: true
@@ -1532,16 +1732,769 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Address not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected error
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Address not found"
+
+  /api/v1/orders/create:
+    post:
+      summary: Create Order
+      description: Places an order for a book.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: object
+                  properties:
+                    book_id:
+                      type: integer
+                      example: 1
+                    address_id:
+                      type: integer
+                      example: 10
+                    quantity:
+                      type: integer
+                      example: 2
+                  required:
+                    - book_id
+                    - address_id
+                    - quantity
+      responses:
+        "201":
+          description: Order successfully placed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Order placed successfully"
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        example: "pending"
+        "401":
+          description: Unauthorized - Invalid Token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Not Found - User, Book, or Address not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Quantity must be greater than 0"]
+
+  /api/v1/carts/add:
+    post:
+      summary: Add Book to Cart
+      description: Adds a book to the authenticated user's cart. If the book already exists in the cart and is not deleted, the quantity is updated. Requires authentication via Bearer token.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 1
+                      description: The ID of the user adding the book to the cart
+                    book_id:
+                      type: integer
+                      example: 456
+                      description: The ID of the book to add to the cart
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      example: 2
+                      description: The quantity of the book to add
+                  required:
+                    - user_id
+                    - book_id
+                    - quantity
+      responses:
+        "200":
+          description: Book successfully added to or updated in the cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book added to cart"
+                  cart:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 2
+                      is_deleted:
+                        type: boolean
+                        example: false
+              examples:
+                new_book:
+                  summary: New book added to cart
+                  value:
+                    message: "Book added to cart"
+                    cart:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 2
+                      is_deleted: false
+                updated_quantity:
+                  summary: Existing book quantity updated
+                  value:
+                    message: "Book quantity updated in cart"
+                    cart:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 5
+                      is_deleted: false
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+        "422":
+          description: Validation error (e.g., invalid quantity or database errors)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Quantity must be greater than 0"]
+              examples:
+                invalid_quantity:
+                  summary: Invalid quantity provided
+                  value:
+                    errors: ["Invalid quantity"]
+                db_error:
+                  summary: Database validation error
+                  value:
+                    errors: ["User must exist", "Book must exist"]
+
+  /api/v1/orders:
+    get:
+      summary: Get All Orders
+      description: Retrieves all orders for the authenticated user based on the provided JWT token.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 101
+                        book_id:
+                          type: integer
+                          example: 1
+                        address_id:
+                          type: integer
+                          example: 10
+                        quantity:
+                          type: integer
+                          example: 2
+                        price_at_purchase:
+                          type: number
+                          format: float
+                          example: 299.99
+                        total_price:
+                          type: number
+                          format: float
+                          example: 599.98
+                        status:
+                          type: string
+                          example: "pending"
+              examples:
+                with_orders:
+                  summary: Successful response with orders
+                  value:
+                    success: true
+                    orders:
+                      - id: 101
+                        book_id: 1
+                        address_id: 10
+                        quantity: 2
+                        price_at_purchase: 299.99
+                        total_price: 599.98
+                        status: "pending"
+                      - id: 102
+                        book_id: 2
+                        address_id: 10
+                        quantity: 1
+                        price_at_purchase: 15.99
+                        total_price: 15.99
+                        status: "shipped"
+                no_orders:
+                  summary: Successful response with no orders
+                  value:
+                    success: true
+                    orders: []
+        "401":
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        "422":
+          description: Unprocessable Entity - No orders found or other errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "No orders found"
+
+  /api/v1/carts/{user_id}:
+    get:
+      summary: Get User Cart
+      description: Retrieves all active items (not soft-deleted) in the specified user's cart, including book details and quantities. Requires authentication via Bearer token.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The ID of the user whose cart is being retrieved
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Cart retrieved successfully (returns array even if empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Cart retrieved successfully"
+                  cart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cart_id:
+                          type: integer
+                          example: 1
+                        book_id:
+                          type: integer
+                          example: 456
+                        book_name:
+                          type: string
+                          example: "Ruby on Rails Guide"
+                        quantity:
+                          type: integer
+                          example: 2
+                        price:
+                          type: number
+                          format: float
+                          example: 800.0
+              examples:
+                with_items:
+                  summary: Cart with items
+                  value:
+                    success: true
+                    message: "Cart retrieved successfully"
+                    cart:
+                      - cart_id: 1
+                        book_id: 456
+                        book_name: "Ruby on Rails Guide"
+                        quantity: 2
+                        price: 800.0
+                empty_cart:
+                  summary: Empty cart
+                  value:
+                    success: true
+                    message: "Cart is empty"
+                    cart: []
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+        "422":
+          description: Error retrieving cart (e.g., database error)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Error retrieving cart: Database connection failed"
+
+  /api/v1/orders/{id}:
+    get:
+      summary: Get Order by ID
+      description: Retrieves a specific order by its ID for the authenticated user.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to retrieve
+          schema:
+            type: integer
+            example: 101
+      responses:
+        "200":
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+                        example: "pending"
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+        "401":
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Order not found"
+        "422":
+          description: Unprocessable Entity - Other errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Unexpected error occurred"]
+
+  /api/v1/orders/update_status/{id}:
+    patch:
+      summary: Update Order Status
+      description: Updates the status of a specific order for the authenticated user.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - in: path
+          name: id
+          required: true
+          description: The ID of the order to update
+          schema:
+            type: integer
+            example: 101
+        - in: query
+          name: status
+          required: true
+          description: The new status for the order
+          schema:
+            type: string
+            enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+            example: "shipped"
+      responses:
+        "200":
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Order status updated successfully"
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+                        example: "shipped"
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Order not found"
+        "422":
+          description: Unprocessable Entity - Validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Status must be a valid status"]
+
+  /api/v1/remove_book/{id}:
+    delete:
+      summary: Remove Book from Cart
+      description: Decreases the quantity of a book in the authenticated user's cart by 1. If the quantity reaches 0, the cart item is soft-deleted (sets `is_deleted` to true). Requires authentication via Bearer token.
+      tags:
+        - Carts
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The ID of the book to remove (decreases quantity or soft-deletes from the cart)
+          schema:
+            type: integer
+            example: 456
+      responses:
+        "200":
+          description: Cart item updated (quantity decreased or soft-deleted)
+          content:
+            application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Book quantity decreased in cart"
+                book:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    user_id:
+                      type: integer
+                      example: 1
+                    book_id:
+                      type: integer
+                      example: 456
+                    quantity:
+                      type: integer
+                      example: 2
+                    is_deleted:
+                      type: boolean
+                      example: false
+              examples:
+                quantity_decreased:
+                  summary: Quantity decreased
+                  value:
+                    message: "Book quantity decreased in cart"
+                    book:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 2
+                      is_deleted: false
+                soft_deleted:
+                  summary: Item soft-deleted (quantity was 1)
+                  value:
+                    message: "Book removed from cart"
+                    book:
+                      id: 1
+                      user_id: 1
+                      book_id: 456
+                      quantity: 1
+                      is_deleted: true
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Cart item not found for the given book ID and user, or already deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Cart item not found"
+        "422":
+          description: Error during update (e.g., database validation errors)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Failed to update cart item"]

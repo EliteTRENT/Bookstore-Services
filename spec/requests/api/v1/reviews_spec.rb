@@ -18,10 +18,16 @@ RSpec.describe ReviewService, type: :service do
 
       it "creates a review successfully" do
         result = ReviewService.add_review(valid_attributes)
+
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Review added successfully")
-        expect(result[:review]).to be_a(Review)
-        expect(result[:review].persisted?).to be_truthy
+
+        # Validate the returned review as a hash
+        expect(result[:review]).to be_a(Hash)
+        expect(result[:review]["user_id"]).to eq(user.id)
+        expect(result[:review]["book_id"]).to eq(book.id)
+        expect(result[:review]["rating"]).to eq(5)
+        expect(result[:review]["comment"]).to eq("Amazing book!")
       end
     end
 
@@ -29,30 +35,40 @@ RSpec.describe ReviewService, type: :service do
       it "returns an error when user_id is missing" do
         invalid_attributes = { book_id: book.id, rating: 5, comment: "Great book!" }
         result = ReviewService.add_review(invalid_attributes)
+
+        expect(result[:success]).to be_falsey
         expect(result[:error]).to include("User must exist")
       end
 
       it "returns an error when book_id is missing" do
         invalid_attributes = { user_id: user.id, rating: 5, comment: "Great book!" }
         result = ReviewService.add_review(invalid_attributes)
+
+        expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Book must exist")
       end
 
       it "returns an error when rating is missing" do
         invalid_attributes = { user_id: user.id, book_id: book.id, comment: "Great book!" }
         result = ReviewService.add_review(invalid_attributes)
+
+        expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Rating can't be blank")
       end
 
       it "returns an error when rating is out of range" do
         invalid_attributes = { user_id: user.id, book_id: book.id, rating: 10, comment: "Great book!" }
         result = ReviewService.add_review(invalid_attributes)
+
+        expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Rating is not included in the list")
       end
 
       it "returns an error when comment is missing" do
         invalid_attributes = { user_id: user.id, book_id: book.id, rating: 4, comment: "" }
         result = ReviewService.add_review(invalid_attributes)
+
+        expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Comment can't be blank")
       end
     end
@@ -64,6 +80,8 @@ RSpec.describe ReviewService, type: :service do
 
         expect(first_review[:success]).to be_truthy
         expect(second_review[:success]).to be_truthy
+
+        # Ensure multiple reviews by the same user are saved
         expect(Review.where(user_id: user.id, book_id: book.id).count).to eq(2)
       end
     end
@@ -72,57 +90,84 @@ RSpec.describe ReviewService, type: :service do
   describe ".get_reviews" do
     context "when reviews exist for the book" do
       before do
-        Review.create!(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
-        Review.create!(user_id: user2.id, book_id: book.id, rating: 4, comment: "Great read!")
+        ReviewService.add_review(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!")
+        ReviewService.add_review(user_id: user2.id, book_id: book.id, rating: 4, comment: "Great read!")
       end
 
       it "returns all reviews for the given book" do
         result = ReviewService.get_reviews(book.id)
 
-        expect(result.count).to eq(2)
-        expect(result.first).to be_a(Review)
-        expect(result.first.book_id).to eq(book.id)
-        expect(result.map(&:rating)).to match_array([5, 4])
+        expect(result).to include(:reviews, :average_rating, :total_reviews)
+
+        # Validate the total number of reviews
+        expect(result[:total_reviews]).to eq(2)
+
+        # Validate the reviews content
+        expect(result[:reviews]).to be_an(Array)
+        expect(result[:reviews].size).to eq(2)
+
+        review_ratings = result[:reviews].map { |r| r["rating"] || r[:rating] }
+        expect(review_ratings).to match_array([5, 4])
       end
     end
 
     context "when no reviews exist for the book" do
-      it "returns an empty array" do
+      it "returns an empty array with default values" do
         result = ReviewService.get_reviews(book.id)
 
-        expect(result).to be_empty
+        expect(result).to include(:reviews, :average_rating, :total_reviews)
+        expect(result[:reviews]).to eq([])
+        expect(result[:average_rating]).to eq(0)
+        expect(result[:total_reviews]).to eq(0)
       end
     end
 
     context "when an invalid book_id is provided" do
-      it "returns an empty array" do
+      it "returns an empty array with default values" do
         result = ReviewService.get_reviews(-1) # Invalid book_id
-        expect(result).to be_empty
+
+        expect(result).to include(:reviews, :average_rating, :total_reviews)
+        expect(result[:reviews]).to eq([])
+        expect(result[:average_rating]).to eq(0)
+        expect(result[:total_reviews]).to eq(0)
       end
     end
   end
 
   describe ".delete_review" do
-    let!(:review) { Review.create!(user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!") }
+    let!(:review) do
+      ReviewService.add_review(
+        user_id: user.id, book_id: book.id, rating: 5, comment: "Loved it!"
+      )[:review]
+    end
 
     context "when the review exists" do
       it "deletes the review successfully" do
-        result = ReviewService.delete_review(review.id)
+        # Pass both review_id and user_id
+        result = ReviewService.delete_review(review["id"], user.id)
 
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Review deleted successfully")
-        expect(Review.find_by(id: review.id)).to be_nil
+        expect(Review.find_by(id: review["id"])).to be_nil
       end
     end
 
     context "when the review does not exist" do
       it "returns an error message" do
-        result = ReviewService.delete_review(-1) # Invalid review ID
+        result = ReviewService.delete_review(-1, user.id)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Review not found")
+        expect(result[:error]).to eq("Review not found or you don't have permission to delete it")
+      end
+    end
+
+    context "when the review belongs to another user" do
+      it "prevents deletion by unauthorized user" do
+        result = ReviewService.delete_review(review["id"], user2.id)
+
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Review not found or you don't have permission to delete it")
       end
     end
   end
-
 end
