@@ -159,7 +159,7 @@ RSpec.describe UserService, type: :service do
       it "returns an error" do
         result = UserService.login(email: "john.doe@gmail.com", password: "WrongPass123")
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Wrong password")
+        expect(result[:error]).to eq("Wrong email or password")
       end
     end
 
@@ -183,7 +183,7 @@ RSpec.describe UserService, type: :service do
       it "returns an error" do
         result = UserService.login(email: "john.doe@gmail.com", password: "")
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Wrong password")
+        expect(result[:error]).to eq("Wrong email or password")
       end
     end
 
@@ -199,7 +199,7 @@ RSpec.describe UserService, type: :service do
       it "returns an error" do
         result = UserService.login(email: "john.doe@gmail.com", password: "pass")
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Wrong password")
+        expect(result[:error]).to eq("Wrong email or password")
       end
     end
 

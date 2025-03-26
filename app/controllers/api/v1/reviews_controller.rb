@@ -1,5 +1,5 @@
 class Api::V1::ReviewsController < ApplicationController
-  before_action :authenticate_request
+  before_action :authenticate_request, except: [ :get_reviews ]
 
   def add_review
     result = ReviewService.add_review(review_params)
