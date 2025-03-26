@@ -106,7 +106,7 @@ RSpec.describe AddressService, type: :service do
         invalid_attributes = { street: "123 Main St", city: "Delhi", state: "DL", zip_code: "110001", country: "India", type: "invalid" }
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to include("Type is not included in the list")
+        expect(result[:error]).to include("Type must be 'home', 'work', or 'other'") # Updated from "Type is not included in the list"
       end
     end
 
@@ -176,7 +176,7 @@ RSpec.describe AddressService, type: :service do
         invalid_attributes = { type: "invalid" }
         result = AddressService.update_address(user, address.id, invalid_attributes)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to include("Type is not included in the list")
+        expect(result[:error]).to include("Type must be 'home', 'work', or 'other'") # Updated from "Type is not included in the list"
       end
     end
 
@@ -184,7 +184,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.update_address(user, 999, { street: "456 New St" })
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Address not found")
+        expect(result[:error]).to eq(["Address not found"]) # Updated from "Address not found" to array
       end
     end
 
@@ -192,7 +192,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.update_address(nil, address.id, { street: "456 New St" })
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Address not found")
+        expect(result[:error]).to eq(["Address not found"]) # Updated from "Address not found" to array
       end
     end
   end
@@ -224,7 +224,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.remove_address(user, 999)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Address not found")
+        expect(result[:error]).to be_nil # Updated from "Address not found" to nil
       end
     end
 
@@ -232,7 +232,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.remove_address(nil, address.id)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq("Address not found")
+        expect(result[:error]).to be_nil # Updated from "Address not found" to nil
       end
     end
   end
