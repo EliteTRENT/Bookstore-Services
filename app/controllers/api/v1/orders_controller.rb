@@ -61,6 +61,6 @@ class Api::V1::OrdersController < ApplicationController
   private
 
   def order_params
-    params.require(:order).permit(:user_id, :book_id, :address_id, :quantity, :price_at_purchase, :total_price)
+    params.require(:order).permit(:book_id, :address_id, :quantity, :price_at_purchase, :total_price)
   end
 end
