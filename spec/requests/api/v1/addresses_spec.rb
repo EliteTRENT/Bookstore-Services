@@ -138,11 +138,12 @@ RSpec.describe AddressService, type: :service do
       end
     end
 
+
     context "when the address does not exist" do
       it "returns an error" do
         result = AddressService.update_address(user, 999, { street: "456 New St" })
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq(["Address not found"])
+        expect(result[:error]).to eq([ "Address not found" ])
       end
     end
 
@@ -150,7 +151,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.update_address(nil, address.id, { street: "456 New St" })
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq(["Address not found"])
+        expect(result[:error]).to eq([ "Address not found" ])
       end
     end
   end
