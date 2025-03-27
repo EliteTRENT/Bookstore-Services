@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Api::V1::UsersController, type: :controller do
-  describe "POST #signup" do
+  describe "POST #create" do
     let(:valid_attributes) do
       {
         user: {
@@ -26,7 +26,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
     context "with valid attributes" do
       it "creates a user and returns a success response" do
-        post :signup, params: valid_attributes
+        post :create, params: valid_attributes
         expect(response).to have_http_status(:created)
         json_response = JSON.parse(response.body)
         expect(json_response["message"]).to eq("User created successfully")
@@ -37,7 +37,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
     context "with invalid attributes" do
       it "returns an error response" do
-        post :signup, params: invalid_attributes
+        post :create, params: invalid_attributes
         expect(response).to have_http_status(:unprocessable_entity)
         json_response = JSON.parse(response.body)
         expect(json_response["errors"]).to include("Name can't be blank")
