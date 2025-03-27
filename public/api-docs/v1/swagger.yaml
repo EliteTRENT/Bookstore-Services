@@ -268,6 +268,8 @@ paths:
       description: Creates a new book with the provided details
       tags:
         - Books
+      security: 
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -783,10 +785,10 @@ paths:
           schema:
             type: string
             example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        - name: book_id
+        - name: wishlist_id
           in: path
           required: true
-          description: The ID of the book to remove from the wishlist
+          description: The ID of the wishlist item to be removed
           schema:
             type: integer
             example: 456
@@ -832,6 +834,8 @@ paths:
       description: Updates an existing book with the provided details
       tags:
         - Books
+      security: 
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -959,6 +963,8 @@ paths:
       description: Permanently deletes a book by its ID from the database
       tags:
         - Books
+      security: 
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -992,8 +998,6 @@ paths:
                     example: "Book not found"
               example:
                 errors: "Book not found"
-
-  /api/v1/books/show/{id}:
     get:
       summary: Get Book by ID
       description: Retrieves a specific book by its ID, if it exists and is not deleted
@@ -1072,6 +1076,8 @@ paths:
       description: Retrieves the stock quantities for a list of books specified by their IDs.
       tags:
         - Books
+      security: 
+        - BearerAuth: []
       parameters:
         - name: book_ids
           in: query
@@ -1152,6 +1158,8 @@ paths:
       description: Toggles the delete status of a book (marks as deleted or restores it) by its ID
       tags:
         - Books
+      security: 
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1844,19 +1852,33 @@ paths:
                 order:
                   type: object
                   properties:
-                    book_id:
+                    user_id:
                       type: integer
                       example: 1
+                    book_id:
+                      type: integer
+                      example: 5
                     address_id:
                       type: integer
-                      example: 10
+                      example: 20
                     quantity:
                       type: integer
                       example: 2
+                    price_at_purchase:
+                      type: number
+                      format: float
+                      example: 19.99
+                    total_price:
+                      type: number
+                      format: float
+                      example: 39.98
                   required:
+                    - user_id
                     - book_id
                     - address_id
                     - quantity
+                    - price_at_purchase
+                    - total_price
       responses:
         "201":
           description: Order successfully placed
@@ -1874,23 +1896,26 @@ paths:
                       id:
                         type: integer
                         example: 101
-                      book_id:
+                      user_id:
                         type: integer
                         example: 1
+                      book_id:
+                        type: integer
+                        example: 5
                       address_id:
                         type: integer
-                        example: 10
+                        example: 20
                       quantity:
                         type: integer
                         example: 2
                       price_at_purchase:
                         type: number
                         format: float
-                        example: 299.99
+                        example: 19.99
                       total_price:
                         type: number
                         format: float
-                        example: 599.98
+                        example: 39.98
                       status:
                         type: string
                         example: "pending"
@@ -1926,6 +1951,108 @@ paths:
                     items:
                       type: string
                     example: ["Quantity must be greater than 0"]
+
+    get:
+      summary: Get All Orders
+      description: Retrieves all orders for the authenticated user based on the provided JWT token.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 101
+                        book_id:
+                          type: integer
+                          example: 1
+                        address_id:
+                          type: integer
+                          example: 10
+                        quantity:
+                          type: integer
+                          example: 2
+                        price_at_purchase:
+                          type: number
+                          format: float
+                          example: 299.99
+                        total_price:
+                          type: number
+                          format: float
+                          example: 599.98
+                        status:
+                          type: string
+                          example: "pending"
+              examples:
+                with_orders:
+                  summary: Successful response with orders
+                  value:
+                    success: true
+                    orders:
+                      - id: 101
+                        book_id: 1
+                        address_id: 10
+                        quantity: 2
+                        price_at_purchase: 299.99
+                        total_price: 599.98
+                        status: "pending"
+                      - id: 102
+                        book_id: 2
+                        address_id: 10
+                        quantity: 1
+                        price_at_purchase: 15.99
+                        total_price: 15.99
+                        status: "shipped"
+                no_orders:
+                  summary: Successful response with no orders
+                  value:
+                    success: true
+                    orders: []
+        "401":
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        "422":
+          description: Unprocessable Entity - No orders found or other errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "No orders found"
+
+  /api/v1/orders/{id}:
     patch:
       summary: Update Order Status
       description: Updates the status of a specific order for the authenticated user.
@@ -2037,8 +2164,8 @@ paths:
                       type: string
                     example: ["Status must be a valid status"]
     get:
-      summary: Get All Orders
-      description: Retrieves all orders for the authenticated user based on the provided JWT token.
+      summary: Get Order by ID
+      description: Retrieves a specific order by its ID for the authenticated user.
       tags:
         - Orders
       security:
@@ -2051,70 +2178,56 @@ paths:
           schema:
             type: string
             example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: id
+          in: path
+          required: true
+          description: The ID of the order to retrieve
+          schema:
+            type: integer
+            example: 101
       responses:
         "200":
-          description: Orders retrieved successfully
+          description: Order retrieved successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  orders:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 101
-                        book_id:
-                          type: integer
-                          example: 1
-                        address_id:
-                          type: integer
-                          example: 10
-                        quantity:
-                          type: integer
-                          example: 2
-                        price_at_purchase:
-                          type: number
-                          format: float
-                          example: 299.99
-                        total_price:
-                          type: number
-                          format: float
-                          example: 599.98
-                        status:
-                          type: string
-                          example: "pending"
-              examples:
-                with_orders:
-                  summary: Successful response with orders
-                  value:
-                    success: true
-                    orders:
-                      - id: 101
-                        book_id: 1
-                        address_id: 10
-                        quantity: 2
-                        price_at_purchase: 299.99
-                        total_price: 599.98
-                        status: "pending"
-                      - id: 102
-                        book_id: 2
-                        address_id: 10
-                        quantity: 1
-                        price_at_purchase: 15.99
-                        total_price: 15.99
-                        status: "shipped"
-                no_orders:
-                  summary: Successful response with no orders
-                  value:
-                    success: true
-                    orders: []
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+                        example: "pending"
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
         "401":
           description: Unauthorized - Invalid token
           content:
@@ -2124,17 +2237,31 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Unauthorized"
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Order not found"
         "422":
-          description: Unprocessable Entity - No orders found or other errors
+          description: Unprocessable Entity - Other errors
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   errors:
-                    type: string
-                    example: "No orders found"
+                    type: array
+                    items:
+                      type: string
+                    example: ["Unexpected error occurred"]
 
   /api/v1/carts:
     post:
@@ -2464,175 +2591,61 @@ paths:
                     type: string
                     example: "Error retrieving cart: Database connection failed"
 
-  /api/v1/orders/{id}:
-    get:
-      summary: Get Order by ID
-      description: Retrieves a specific order by its ID for the authenticated user.
-      tags:
-        - Orders
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication (e.g., "Bearer <token>")
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        - name: id
-          in: path
-          required: true
-          description: The ID of the order to retrieve
-          schema:
-            type: integer
-            example: 101
-      responses:
-        "200":
-          description: Order retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  order:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 101
-                      book_id:
-                        type: integer
-                        example: 1
-                      address_id:
-                        type: integer
-                        example: 10
-                      quantity:
-                        type: integer
-                        example: 2
-                      price_at_purchase:
-                        type: number
-                        format: float
-                        example: 299.99
-                      total_price:
-                        type: number
-                        format: float
-                        example: 599.98
-                      status:
-                        type: string
-                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
-                        example: "pending"
-                      created_at:
-                        type: string
-                        format: date-time
-                        example: "2025-03-10T12:00:00Z"
-                      updated_at:
-                        type: string
-                        format: date-time
-                        example: "2025-03-10T12:00:00Z"
-        "401":
-          description: Unauthorized - Invalid token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
-        "404":
-          description: Not Found - User or Order not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    enum:
-                      - "User not found"
-                      - "Order not found"
-        "422":
-          description: Unprocessable Entity - Other errors
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Unexpected error occurred"]
-
   /api/v1/carts/{book_id}:
     delete:
       summary: Remove Book from Cart
-      description: Decreases the quantity of a book in the authenticated user's cart by 1. If the quantity reaches 0, the cart item is soft-deleted (sets `is_deleted` to true). Requires authentication via Bearer token.
+      description: Soft-deletes a book from the authenticated user's cart by setting `is_deleted` to true. Requires authentication via Bearer token, which is decoded to identify the user.
       tags:
         - Carts
       security:
         - BearerAuth: []
       parameters:
         - in: path
-          name: id
+          name: book_id
           required: true
-          description: The ID of the book to remove (decreases quantity or soft-deletes from the cart)
+          description: The ID of the book to soft-delete from the user's cart
           schema:
             type: integer
             example: 456
       responses:
         "200":
-          description: Cart item updated (quantity decreased or soft-deleted)
+          description: Cart item successfully soft-deleted
           content:
             application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "Book quantity decreased in cart"
-                book:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                      example: 1
-                    user_id:
-                      type: integer
-                      example: 1
-                    book_id:
-                      type: integer
-                      example: 456
-                    quantity:
-                      type: integer
-                      example: 2
-                    is_deleted:
-                      type: boolean
-                      example: false
-              examples:
-                quantity_decreased:
-                  summary: Quantity decreased
-                  value:
-                    message: "Book quantity decreased in cart"
-                    book:
-                      id: 1
-                      user_id: 1
-                      book_id: 456
-                      quantity: 2
-                      is_deleted: false
-                soft_deleted:
-                  summary: Item soft-deleted (quantity was 1)
-                  value:
-                    message: "Book removed from cart"
-                    book:
-                      id: 1
-                      user_id: 1
-                      book_id: 456
-                      quantity: 1
-                      is_deleted: true
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book removed from cart"
+                  book:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 2
+                      is_deleted:
+                        type: boolean
+                        example: true
+                example:
+                  message: "Book removed from cart"
+                  book:
+                    id: 1
+                    user_id: 1
+                    book_id: 456
+                    quantity: 2
+                    is_deleted: true
         "401":
-          description: Unauthorized - Token missing or invalid
+          description: Unauthorized - Token missing or invalid, or user not found
           content:
             application/json:
               schema:
@@ -2640,9 +2653,11 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Invalid token"
+                    example: "User not found"
+                example:
+                  error: "User not found"
         "404":
-          description: Cart item not found for the given book ID and user, or already deleted
+          description: Cart item not found for the given book ID and user
           content:
             application/json:
               schema:
@@ -2650,9 +2665,9 @@ paths:
                 properties:
                   error:
                     type: string
-                    enum:
-                      - "User not found"
-                      - "Cart item not found"
+                    example: "Cart item not found"
+                example:
+                  error: "Cart item not found"
         "422":
           description: Error during update (e.g., database validation errors)
           content:
@@ -2660,11 +2675,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  errors:
+                  error:
                     type: array
                     items:
                       type: string
                     example: ["Failed to update cart item"]
+                example:
+                  error: ["Failed to update cart item"]
 
   /api/v1/google_auth:
     post:

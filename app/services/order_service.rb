@@ -72,6 +72,11 @@ class OrderService
 
       if order.persisted?
         book.update!(quantity: book.quantity - quantity)
+        begin
+          UserMailer.enqueue_order_confirmation_email(order)
+        rescue StandardError => e
+          Rails.logger.error "Failed to enqueue order confirmation email: #{e.message}"
+        end
         { success: true, message: "Order placed successfully", order: order }
       else
         { success: false, error: order.errors.full_messages.join(", ") || "Failed to create order" }

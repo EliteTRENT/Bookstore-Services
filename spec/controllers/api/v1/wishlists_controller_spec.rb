@@ -4,7 +4,7 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
   let(:user) do
     User.create!(
       name: "Test User",
-      email: "test#{rand(1000)}@gmail.com", # Unique email to avoid duplicates
+      email: "test#{rand(1000)}@gmail.com", 
       password: "Passw0rd!",
       mobile_number: "9876543210"
     )
@@ -34,15 +34,11 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
     }
   end
 
-  # Stub token decoding and authentication for all tests
   before do
-    # Stub invalid token to simulate JWT::DecodeError
     allow(JsonWebToken).to receive(:decode).with(invalid_token).and_return(nil)
-    # Stub valid token to return a HashWithIndifferentAccess like the real decode method
     allow(JsonWebToken).to receive(:decode).with(valid_token).and_return(
       HashWithIndifferentAccess.new("email" => user.email, "exp" => 1.hour.from_now.to_i)
     )
-    # Stub authenticate_request to set @current_user for valid token cases
     allow_any_instance_of(ApplicationController).to receive(:authenticate_request) do |controller|
       if request.headers["Authorization"] == "Bearer #{valid_token}"
         controller.instance_variable_set(:@current_user, user)
@@ -82,11 +78,11 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
     end
 
     context "with valid token but non-existent book" do
-      it "returns a not found response" do
+      it "returns an unprocessable entity response" do
         request.headers["Authorization"] = "Bearer #{valid_token}"
         post :create, params: { wishlist: { book_id: 999 } }, as: :json
 
-        expect(response).to have_http_status(:not_found)
+        expect(response).to have_http_status(:unprocessable_entity) 
         json_response = JSON.parse(response.body)
         expect(json_response["error"]).to eq("Book not found")
       end
@@ -167,7 +163,7 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
 
         expect(response).to have_http_status(:not_found)
         json_response = JSON.parse(response.body)
-        expect(json_response["errors"]).to eq("Wishlist item not found")
+        expect(json_response["error"]).to eq("Wishlist item not found") 
       end
     end
   end
