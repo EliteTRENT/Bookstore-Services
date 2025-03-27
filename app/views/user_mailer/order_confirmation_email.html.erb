@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+  </head>
+  <body>
+    <h1>Order Confirmation, <%= @user.name %>!</h1>
+    <p>Thank you for your purchase! Your order (#<%= @order.id %>) has been successfully placed.</p>
+    <p><strong>Book:</strong> <%= @order.book.name %></p>
+    <p><strong>Quantity:</strong> <%= @order.quantity %></p>
+    <p><strong>Total Price:</strong> <%= number_to_currency(@order.total_price) %></p>
+    <p>We’ll notify you once your order status changes. For inquiries, reach out to support@bookstore.com.</p>
+    <p>Happy reading!</p>
+    <p>The Book Store Team</p>
+  </body>
+</html>
