@@ -1,42 +1,14 @@
 require 'rails_helper'
 
 RSpec.describe CartService, type: :service do
-  let!(:user) do
-    User.create!(
-      name: 'John Doe',
-      email: 'john.doe@gmail.com',
-      password: 'Password@123',
-      mobile_number: '+919876543210'
-    )
-  end
-
-  let!(:book) do
-    Book.create!(
-      name: 'Ruby on Rails Guide',
-      author: 'David Heinemeier Hansson',
-      mrp: 1000.0,
-      discounted_price: 800.0,
-      quantity: 10,
-      book_details: 'A complete guide to Rails',
-      genre: 'Technology',
-      book_image: 'image_url',
-      is_deleted: false
-    )
-  end
-
-  let!(:cart_item) do
-    Cart.create!(
-      user_id: user.id,
-      book_id: book.id,
-      quantity: 2,
-      is_deleted: false
-    )
-  end
+  let!(:user) { create(:user) }
+  let!(:book) { create(:book) }
+  let!(:cart_item) { create(:cart, user: user, book: book, quantity: 2) }
 
   describe '.create' do
     context 'with valid attributes' do
       it 'adds a new book to the cart successfully' do
-        new_book = Book.create!(name: 'Test Book', author: 'Test', mrp: 500, discounted_price: 400, quantity: 5, is_deleted: false)
+        new_book = create(:book)
         cart_params = { user_id: user.id, book_id: new_book.id, quantity: 1 }
         result = CartService.create(cart_params)
 
@@ -51,7 +23,7 @@ RSpec.describe CartService, type: :service do
 
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq('Book quantity updated in cart')
-        expect(result[:cart].quantity).to eq(5)
+        expect(result[:cart].quantity).to eq(5) # 2 + 3
       end
 
       it 'handles large quantity updates correctly' do
@@ -59,11 +31,12 @@ RSpec.describe CartService, type: :service do
         result = CartService.create(cart_params)
 
         expect(result[:success]).to be_truthy
+        expect(result[:message]).to eq('Book quantity updated in cart')
         expect(result[:cart].quantity).to eq(102) # 2 + 100
       end
 
       it 'adds book with minimum valid quantity' do
-        new_book = Book.create!(name: 'Min Book', author: 'Min', mrp: 300, discounted_price: 200, quantity: 5, is_deleted: false)
+        new_book = create(:book)
         cart_params = { user_id: user.id, book_id: new_book.id, quantity: 1 }
         result = CartService.create(cart_params)
 
@@ -102,7 +75,7 @@ RSpec.describe CartService, type: :service do
         result = CartService.create(cart_params)
 
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq('Invalid quantity') # 'invalid'.to_i = 0
+        expect(result[:error]).to eq('Invalid quantity')
       end
     end
 
@@ -147,8 +120,8 @@ RSpec.describe CartService, type: :service do
       end
 
       it 'retrieves the cart with multiple items' do
-        new_book = Book.create!(name: 'New Book', author: 'Author', mrp: 600, discounted_price: 500, quantity: 5, is_deleted: false)
-        Cart.create!(user_id: user.id, book_id: new_book.id, quantity: 1, is_deleted: false)
+        new_book = create(:book)
+        create(:cart, user: user, book: new_book, quantity: 1)
         result = CartService.get_cart(user.id)
 
         expect(result[:success]).to be_truthy
@@ -167,18 +140,18 @@ RSpec.describe CartService, type: :service do
         result = CartService.get_cart(user.id)
 
         expect(result[:success]).to be_truthy
-        expect(result[:cart].first[:book_name]).to eq('Ruby on Rails Guide')
+        expect(result[:cart].first[:book_name]).to eq(book.name)
       end
 
       it 'excludes soft-deleted cart items' do
         cart_item.update(is_deleted: true)
-        new_book = Book.create!(name: 'Active Book', author: 'Author', mrp: 700, discounted_price: 600, quantity: 5, is_deleted: false)
-        Cart.create!(user_id: user.id, book_id: new_book.id, quantity: 1, is_deleted: false)
+        new_book = create(:book)
+        create(:cart, user: user, book: new_book, quantity: 1)
         result = CartService.get_cart(user.id)
 
         expect(result[:success]).to be_truthy
         expect(result[:cart].size).to eq(1)
-        expect(result[:cart].first[:book_name]).to eq('Active Book')
+        expect(result[:cart].first[:book_name]).to eq(new_book.name)
       end
     end
 
@@ -193,12 +166,7 @@ RSpec.describe CartService, type: :service do
       end
 
       it 'returns an empty cart for a user with no cart history' do
-        new_user = User.create!(
-          name: 'Jane',
-          email: 'jane@gmail.com',
-          password: 'Password@123',
-          mobile_number: '+919876543211'
-        )
+        new_user = create(:user)
         result = CartService.get_cart(new_user.id)
 
         expect(result[:success]).to be_truthy
@@ -286,9 +254,9 @@ RSpec.describe CartService, type: :service do
       end
 
       it 'returns an error if update fails' do
+        cart_item # Ensure cart_item is created before mocking
         allow_any_instance_of(Cart).to receive(:update).and_return(false)
         allow_any_instance_of(Cart).to receive(:errors).and_return(double(full_messages: ['Update failed']))
-
         result = CartService.soft_delete_book(book.id, user.id)
 
         expect(result[:success]).to be_falsey
