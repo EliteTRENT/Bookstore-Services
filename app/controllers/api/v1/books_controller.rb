@@ -3,6 +3,7 @@ class Api::V1::BooksController < ApplicationController
   before_action :authenticate_request, except: [ :index, :search_suggestions, :show ]
 
   def create
+    Rails.logger.info "Params received: #{params.inspect}"
     if params[:books].present?
       result = BookService.create_book(file: params[:books])
     else

@@ -1,5 +1,5 @@
 class BookService
-  require "csv"  # Required for CSV parsing
+  require "csv"
 
   def self.create_book(book_params)
     if book_params[:file].present?

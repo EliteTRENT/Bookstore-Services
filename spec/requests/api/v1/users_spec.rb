@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe UserService, type: :service do
-  describe ".signup" do
+  describe ".create" do
     context "with valid attributes" do
       let(:valid_attributes) do
         {
@@ -13,7 +13,7 @@ RSpec.describe UserService, type: :service do
       end
 
       it "creates a user successfully" do
-        result = UserService.signup(valid_attributes)
+        result = UserService.create(valid_attributes)
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("User created successfully")
         expect(result[:user]).to be_a(User)
@@ -29,7 +29,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Name can't be blank")
       end
 
@@ -40,7 +40,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Name must start with a capital letter, be at least 3 characters long, and contain only alphabets with spaces allowed between words")
       end
 
@@ -51,7 +51,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Email can't be blank")
       end
 
@@ -63,7 +63,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "9876543211"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Email has already been taken")
       end
 
@@ -74,7 +74,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Email must be a valid email with @gmail, @yahoo, or @ask and a valid domain (.com, .in, etc.)")
       end
 
@@ -85,7 +85,7 @@ RSpec.describe UserService, type: :service do
           password: "",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Password can't be blank")
       end
 
@@ -96,7 +96,7 @@ RSpec.describe UserService, type: :service do
           password: "weakpass",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one digit, and one special character")
       end
 
@@ -107,7 +107,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: ""
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Mobile number can't be blank")
       end
 
@@ -118,7 +118,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "12345"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Mobile number must be a 10-digit number starting with 6-9, optionally prefixed with +91")
       end
 
@@ -130,7 +130,7 @@ RSpec.describe UserService, type: :service do
           password: "Password@123",
           mobile_number: "9876543210"
         }
-        result = UserService.signup(invalid_attributes)
+        result = UserService.create(invalid_attributes)
         expect(result[:error]).to include("Mobile number has already been taken")
       end
     end

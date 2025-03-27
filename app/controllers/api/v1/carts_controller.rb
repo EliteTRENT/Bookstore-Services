@@ -24,7 +24,7 @@ module Api
         user = User.find_by(email: token_email)
         return render json: { error: "User not found" }, status: :unauthorized unless user
 
-        result = CartService.soft_delete_book(params[:id], user.id) # Pass book_id and current_user.id
+        result = CartService.soft_delete_book(params[:book_id], user.id) # Pass book_id and current_user.id
         if result[:success]
           render json: { message: result[:message], book: result[:book] }, status: :ok
         else
