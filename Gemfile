@@ -88,3 +88,7 @@ group :test do
   gem "simplecov", "~> 0.22.0", require: false
   gem "simplecov_json_formatter", require: false
 end
+group :test do
+  gem "factory_bot_rails"
+  gem "faker"
+end
