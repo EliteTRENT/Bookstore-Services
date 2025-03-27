@@ -1,22 +1,11 @@
 require "rails_helper"
 
 RSpec.describe AddressService, type: :service do
-  let!(:user) { User.create!(name: "John Doe", email: "john.doe@gmail.com", password: "Password@123", mobile_number: "9876543210") }
+  let(:user) { create(:user) }
 
   describe ".list_addresses" do
     context "when the user has addresses" do
-      let!(:address) do
-        Address.create!(
-          user: user,
-          street: "123 Main St",
-          city: "Delhi",
-          state: "DL",
-          zip_code: "110001",
-          country: "India",
-          type: "home",
-          is_default: false
-        )
-      end
+      let!(:address) { create(:address, user: user) }
 
       it "returns a list of the user's addresses" do
         result = AddressService.list_addresses(user)
@@ -45,17 +34,7 @@ RSpec.describe AddressService, type: :service do
 
   describe ".add_address" do
     context "with valid attributes" do
-      let(:valid_attributes) do
-        {
-          street: "123 Main St",
-          city: "Delhi",
-          state: "DL",
-          zip_code: "110001",
-          country: "India",
-          type: "home",
-          is_default: false
-        }
-      end
+      let(:valid_attributes) { attributes_for(:address) }
 
       it "creates an address successfully" do
         result = AddressService.add_address(user, valid_attributes)
@@ -68,60 +47,50 @@ RSpec.describe AddressService, type: :service do
 
     context "with invalid attributes" do
       it "returns an error when street is missing" do
-        invalid_attributes = { city: "Delhi", state: "DL", zip_code: "110001", country: "India", type: "home" }
+        invalid_attributes = attributes_for(:address, :missing_street)
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Street can't be blank")
       end
 
       it "returns an error when city is missing" do
-        invalid_attributes = { street: "123 Main St", state: "DL", zip_code: "110001", country: "India", type: "home" }
+        invalid_attributes = attributes_for(:address, city: "")
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("City can't be blank")
       end
 
       it "returns an error when state is missing" do
-        invalid_attributes = { street: "123 Main St", city: "Delhi", zip_code: "110001", country: "India", type: "home" }
+        invalid_attributes = attributes_for(:address, state: "")
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("State can't be blank")
       end
 
       it "returns an error when zip_code is missing" do
-        invalid_attributes = { street: "123 Main St", city: "Delhi", state: "DL", country: "India", type: "home" }
+        invalid_attributes = attributes_for(:address, zip_code: "")
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Zip code can't be blank")
       end
 
       it "returns an error when country is missing" do
-        invalid_attributes = { street: "123 Main St", city: "Delhi", state: "DL", zip_code: "110001", type: "home" }
+        invalid_attributes = attributes_for(:address, country: "")
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Country can't be blank")
       end
 
       it "returns an error when type is invalid" do
-        invalid_attributes = { street: "123 Main St", city: "Delhi", state: "DL", zip_code: "110001", country: "India", type: "invalid" }
+        invalid_attributes = attributes_for(:address, :invalid_type)
         result = AddressService.add_address(user, invalid_attributes)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to include("Type must be 'home', 'work', or 'other'") # Updated from "Type is not included in the list"
+        expect(result[:error]).to include("Type must be 'home', 'work', or 'other'")
       end
     end
 
     context "when the user is nil" do
-      let(:valid_attributes) do
-        {
-          street: "123 Main St",
-          city: "Delhi",
-          state: "DL",
-          zip_code: "110001",
-          country: "India",
-          type: "home",
-          is_default: false
-        }
-      end
+      let(:valid_attributes) { attributes_for(:address) }
 
       it "returns an error" do
         result = AddressService.add_address(nil, valid_attributes)
@@ -132,18 +101,7 @@ RSpec.describe AddressService, type: :service do
   end
 
   describe ".update_address" do
-    let!(:address) do
-      Address.create!(
-        user: user,
-        street: "123 Main St",
-        city: "Delhi",
-        state: "DL",
-        zip_code: "110001",
-        country: "India",
-        type: "home",
-        is_default: false
-      )
-    end
+    let!(:address) { create(:address, user: user) }
 
     context "with valid attributes" do
       let(:valid_attributes) { { street: "456 New St", city: "Mumbai" } }
@@ -176,7 +134,7 @@ RSpec.describe AddressService, type: :service do
         invalid_attributes = { type: "invalid" }
         result = AddressService.update_address(user, address.id, invalid_attributes)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to include("Type must be 'home', 'work', or 'other'") # Updated from "Type is not included in the list"
+        expect(result[:error]).to include("Type must be 'home', 'work', or 'other'")
       end
     end
 
@@ -184,7 +142,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.update_address(user, 999, { street: "456 New St" })
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq(["Address not found"]) # Updated from "Address not found" to array
+        expect(result[:error]).to eq(["Address not found"])
       end
     end
 
@@ -192,24 +150,13 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.update_address(nil, address.id, { street: "456 New St" })
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq(["Address not found"]) # Updated from "Address not found" to array
+        expect(result[:error]).to eq(["Address not found"])
       end
     end
   end
 
   describe ".remove_address" do
-    let!(:address) do
-      Address.create!(
-        user: user,
-        street: "123 Main St",
-        city: "Delhi",
-        state: "DL",
-        zip_code: "110001",
-        country: "India",
-        type: "home",
-        is_default: false
-      )
-    end
+    let!(:address) { create(:address, user: user) }
 
     context "when the address exists" do
       it "deletes the address successfully" do
@@ -224,7 +171,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.remove_address(user, 999)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to be_nil # Updated from "Address not found" to nil
+        expect(result[:error]).to be_nil
       end
     end
 
@@ -232,7 +179,7 @@ RSpec.describe AddressService, type: :service do
       it "returns an error" do
         result = AddressService.remove_address(nil, address.id)
         expect(result[:success]).to be_falsey
-        expect(result[:error]).to be_nil # Updated from "Address not found" to nil
+        expect(result[:error]).to be_nil
       end
     end
   end
