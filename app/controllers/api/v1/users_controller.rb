@@ -1,7 +1,7 @@
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [ :signup, :login, :forgot_password, :reset_password ]
-  def signup
-    result = UserService.signup(user_params)
+  skip_before_action :authenticate_request, only: [ :create, :login, :forgot_password, :reset_password ]
+  def create
+    result = UserService.create(user_params)
     if result[:success]
       render json: { message: result[:message], user: result[:user] }, status: :created
     else

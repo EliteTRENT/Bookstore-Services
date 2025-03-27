@@ -86,7 +86,7 @@ paths:
                       type: string
                       example: "Email can't be blank"
 
-  /api/v1/users/login:
+  /api/v1/sessions:
     post:
       summary: User Login
       description: Authenticates an existing user and returns a JWT token.
@@ -196,7 +196,7 @@ paths:
                 example:
                   errors: "Failed to send OTP, please try again"
 
-  /api/v1/users/reset/{id}:
+  /api/v1/users/password/reset/{id}:
     post:
       summary: Reset Password
       description: Resets the user's password using a valid OTP received from the forget password endpoint.
@@ -410,8 +410,6 @@ paths:
                   errors:
                     type: string
                     example: "Unauthorized"
-
-  /api/v1/books:
     get:
       summary: Get All Books
       description: Retrieves a paginated list of all non-deleted books, ordered by creation date (newest first)
@@ -703,8 +701,6 @@ paths:
                     items:
                       type: string
                     example: ["Book is already in your wishlist"]
-
-  /api/v1/wishlists:
     get:
       summary: Get All Wishlist Items
       description: Retrieves all active books in the authenticated user's wishlist.
@@ -771,8 +767,8 @@ paths:
                     type: string
                     example: "User not found"
 
-  /api/v1/wishlists/mark_wishlist_as_deleted/{book_id}:
-    delete:
+  /api/v1/wishlists/{wishlist_id}:
+    patch:
       summary: Remove Book from Wishlist
       description: Marks a book as deleted in the authenticated user's wishlist.
       tags:
@@ -830,7 +826,7 @@ paths:
                       book_not_found:
                         value: "Book not found in wishlist"
 
-  /api/v1/books/update/{id}:
+  /api/v1/books/{id}:
     patch:
       summary: Update Book
       description: Updates an existing book with the provided details
@@ -958,6 +954,44 @@ paths:
                         value: ["Book not found or has been deleted"]
                       validation_errors:
                         value: ["Name can't be blank", "Mrp must be greater than or equal to 0"]
+    delete:
+      summary: Hard Delete a Book
+      description: Permanently deletes a book by its ID from the database
+      tags:
+        - Books
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the book to delete
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Book permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Book permanently deleted"
+              example:
+                message: "Book permanently deleted"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Book not found"
+              example:
+                errors: "Book not found"
 
   /api/v1/books/show/{id}:
     get:
@@ -1032,7 +1066,87 @@ paths:
               example:
                 errors: "Book not found or has been deleted"
 
-  /api/v1/books/toggle_delete/{id}:
+  /api/v1/books/stock:
+    get:
+      summary: Get Book Stock
+      description: Retrieves the stock quantities for a list of books specified by their IDs.
+      tags:
+        - Books
+      parameters:
+        - name: book_ids
+          in: query
+          required: true
+          description: A comma-separated list of book IDs to fetch stock for
+          schema:
+            type: string
+            example: "1,2,3"
+      responses:
+        "200":
+          description: Stock retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  stock:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        book_id:
+                          type: integer
+                          example: 1
+                        quantity:
+                          type: integer
+                          example: 100
+                required:
+                  - success
+                  - stock
+        "400":
+          description: Bad request - book_ids parameter is missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "book_ids parameter is required"
+                required:
+                  - success
+                  - error
+        "422":
+          description: Unprocessable entity - invalid book_ids, no books found, or some books missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    examples:
+                      invalid_ids:
+                        value: "Invalid book_ids: must be an array of positive integers"
+                      no_books:
+                        value: "No books found for the given IDs"
+                      missing_books:
+                        value: "Books not found: 4, 5"
+                      server_error:
+                        value: "Failed to fetch stock quantities: database error"
+                required:
+                  - success
+                  - error
+                  
+  /api/v1/books/delete/{id}:
     patch:
       summary: Toggle Delete Status of a Book
       description: Toggles the delete status of a book (marks as deleted or restores it) by its ID
@@ -1148,46 +1262,6 @@ paths:
                   summary: Validation error
                   value:
                     errors: ["Some validation error"]
-
-  /api/v1/books/{id}:
-    delete:
-      summary: Hard Delete a Book
-      description: Permanently deletes a book by its ID from the database
-      tags:
-        - Books
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The ID of the book to delete
-          schema:
-            type: integer
-            example: 1
-      responses:
-        "200":
-          description: Book permanently deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Book permanently deleted"
-              example:
-                message: "Book permanently deleted"
-        "404":
-          description: Book not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: string
-                    example: "Book not found"
-              example:
-                errors: "Book not found"
 
   /api/v1/reviews:
     post:
@@ -1441,8 +1515,6 @@ paths:
                   errors:
                     type: string
                     example: "Unauthorized"
-
-  /api/v1/addresses:
     post:
       summary: Add Address
       description: Adds a new address for the authenticated user.
@@ -1562,7 +1634,7 @@ paths:
                       invalid_type:
                         value: ["Type is not included in the list"]
 
-  /api/v1/addresses/update/{id}:
+  /api/v1/addresses/{id}:
     patch:
       summary: Update Address
       description: Updates an existing address for the authenticated user.
@@ -1692,8 +1764,6 @@ paths:
                         value: ["Street can't be blank"]
                       invalid_type:
                         value: ["Type is not included in the list"]
-
-  /api/v1/addresses/remove/{id}:
     delete:
       summary: Remove Address
       description: Deletes an address for the authenticated user by its ID.
@@ -1856,6 +1926,215 @@ paths:
                     items:
                       type: string
                     example: ["Quantity must be greater than 0"]
+    patch:
+      summary: Update Order Status
+      description: Updates the status of a specific order for the authenticated user.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - in: path
+          name: id
+          required: true
+          description: The ID of the order to update
+          schema:
+            type: integer
+            example: 101
+        - in: query
+          name: status
+          required: true
+          description: The new status for the order
+          schema:
+            type: string
+            enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+            example: "shipped"
+      responses:
+        "200":
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Order status updated successfully"
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 101
+                      book_id:
+                        type: integer
+                        example: 1
+                      address_id:
+                        type: integer
+                        example: 10
+                      quantity:
+                        type: integer
+                        example: 2
+                      price_at_purchase:
+                        type: number
+                        format: float
+                        example: 299.99
+                      total_price:
+                        type: number
+                        format: float
+                        example: 599.98
+                      status:
+                        type: string
+                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+                        example: "shipped"
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-03-10T12:00:00Z"
+        "401":
+          description: Unauthorized - Token missing or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+        "404":
+          description: Not Found - User or Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                      - "User not found"
+                      - "Order not found"
+        "422":
+          description: Unprocessable Entity - Validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Status must be a valid status"]
+    get:
+      summary: Get All Orders
+      description: Retrieves all orders for the authenticated user based on the provided JWT token.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication (e.g., "Bearer <token>")
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 101
+                        book_id:
+                          type: integer
+                          example: 1
+                        address_id:
+                          type: integer
+                          example: 10
+                        quantity:
+                          type: integer
+                          example: 2
+                        price_at_purchase:
+                          type: number
+                          format: float
+                          example: 299.99
+                        total_price:
+                          type: number
+                          format: float
+                          example: 599.98
+                        status:
+                          type: string
+                          example: "pending"
+              examples:
+                with_orders:
+                  summary: Successful response with orders
+                  value:
+                    success: true
+                    orders:
+                      - id: 101
+                        book_id: 1
+                        address_id: 10
+                        quantity: 2
+                        price_at_purchase: 299.99
+                        total_price: 599.98
+                        status: "pending"
+                      - id: 102
+                        book_id: 2
+                        address_id: 10
+                        quantity: 1
+                        price_at_purchase: 15.99
+                        total_price: 15.99
+                        status: "shipped"
+                no_orders:
+                  summary: Successful response with no orders
+                  value:
+                    success: true
+                    orders: []
+        "401":
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        "422":
+          description: Unprocessable Entity - No orders found or other errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "No orders found"
 
   /api/v1/carts:
     post:
@@ -1983,26 +2262,34 @@ paths:
                   summary: Database validation error
                   value:
                     errors: ["User must exist", "Book must exist"]
-
-  /api/v1/orders:
-    get:
-      summary: Get All Orders
-      description: Retrieves all orders for the authenticated user based on the provided JWT token.
+    patch:
+      summary: Update Cart Quantity
+      description: Updates the quantity of a book in the authenticated user's cart.
       tags:
-        - Orders
+        - Carts
       security:
         - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication (e.g., "Bearer <token>")
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                book_id:
+                  type: integer
+                  example: 456
+                  description: The ID of the book in the cart to update
+                quantity:
+                  type: integer
+                  example: 3
+                  description: The new quantity for the book in the cart
+              required:
+                - book_id
+                - quantity
       responses:
         "200":
-          description: Orders retrieved successfully
+          description: Cart quantity updated successfully
           content:
             application/json:
               schema:
@@ -2011,79 +2298,71 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  orders:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 101
-                        book_id:
-                          type: integer
-                          example: 1
-                        address_id:
-                          type: integer
-                          example: 10
-                        quantity:
-                          type: integer
-                          example: 2
-                        price_at_purchase:
-                          type: number
-                          format: float
-                          example: 299.99
-                        total_price:
-                          type: number
-                          format: float
-                          example: 599.98
-                        status:
-                          type: string
-                          example: "pending"
-              examples:
-                with_orders:
-                  summary: Successful response with orders
-                  value:
-                    success: true
-                    orders:
-                      - id: 101
-                        book_id: 1
-                        address_id: 10
-                        quantity: 2
-                        price_at_purchase: 299.99
-                        total_price: 599.98
-                        status: "pending"
-                      - id: 102
-                        book_id: 2
-                        address_id: 10
-                        quantity: 1
-                        price_at_purchase: 15.99
-                        total_price: 15.99
-                        status: "shipped"
-                no_orders:
-                  summary: Successful response with no orders
-                  value:
-                    success: true
-                    orders: []
+                  message:
+                    type: string
+                    example: "Cart quantity updated"
+                  cart:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 1
+                      book_id:
+                        type: integer
+                        example: 456
+                      quantity:
+                        type: integer
+                        example: 3
+                      is_deleted:
+                        type: boolean
+                        example: false
+                required:
+                  - success
+                  - message
+                  - cart
         "401":
-          description: Unauthorized - Invalid token
+          description: Unauthorized - Invalid or missing token
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  success:
+                    type: boolean
+                    example: false
                   error:
                     type: string
-                    example: "Unauthorized"
+                    example: "Invalid token"
+                required:
+                  - success
+                  - error
         "422":
-          description: Unprocessable Entity - No orders found or other errors
+          description: Unprocessable entity - Invalid quantity, cart item not found, or save failed
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  errors:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
                     type: string
-                    example: "No orders found"
+                    examples:
+                      invalid_quantity:
+                        value: "Invalid quantity"
+                      not_found:
+                        value: "Cart item not found"
+                      validation_error:
+                        value: "Quantity must be greater than zero"
+                      server_error:
+                        value: "Error updating cart quantity: database error"
+                required:
+                  - success
+                  - error
 
   /api/v1/carts/{user_id}:
     get:
@@ -2286,119 +2565,7 @@ paths:
                       type: string
                     example: ["Unexpected error occurred"]
 
-  /api/v1/orders/update_status/{id}:
-    patch:
-      summary: Update Order Status
-      description: Updates the status of a specific order for the authenticated user.
-      tags:
-        - Orders
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          description: Bearer token for authentication (e.g., "Bearer <token>")
-          schema:
-            type: string
-            example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        - in: path
-          name: id
-          required: true
-          description: The ID of the order to update
-          schema:
-            type: integer
-            example: 101
-        - in: query
-          name: status
-          required: true
-          description: The new status for the order
-          schema:
-            type: string
-            enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
-            example: "shipped"
-      responses:
-        "200":
-          description: Order status updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Order status updated successfully"
-                  order:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 101
-                      book_id:
-                        type: integer
-                        example: 1
-                      address_id:
-                        type: integer
-                        example: 10
-                      quantity:
-                        type: integer
-                        example: 2
-                      price_at_purchase:
-                        type: number
-                        format: float
-                        example: 299.99
-                      total_price:
-                        type: number
-                        format: float
-                        example: 599.98
-                      status:
-                        type: string
-                        enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
-                        example: "shipped"
-                      created_at:
-                        type: string
-                        format: date-time
-                        example: "2025-03-10T12:00:00Z"
-                      updated_at:
-                        type: string
-                        format: date-time
-                        example: "2025-03-10T12:00:00Z"
-        "401":
-          description: Unauthorized - Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid token"
-        "404":
-          description: Not Found - User or Order not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    enum:
-                      - "User not found"
-                      - "Order not found"
-        "422":
-          description: Unprocessable Entity - Validation errors
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Status must be a valid status"]
-
-  /api/v1/remove_book/{id}:
+  /api/v1/carts/{book_id}:
     delete:
       summary: Remove Book from Cart
       description: Decreases the quantity of a book in the authenticated user's cart by 1. If the quantity reaches 0, the cart item is soft-deleted (sets `is_deleted` to true). Requires authentication via Bearer token.
@@ -2498,3 +2665,88 @@ paths:
                     items:
                       type: string
                     example: ["Failed to update cart item"]
+
+  /api/v1/google_auth:
+    post:
+      summary: Google SOS Authentication
+      description: Authenticates a user via Google OAuth, creating or linking an account, and returns a JWT token.
+      tags:
+        - Google Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "google-oauth-token"
+                  description: The Google ID token obtained from Google OAuth
+              required:
+                - token
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Authentication successful"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwibmFtZSI6IkpvaG4gRG9lIiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIn0.signature"
+                  user_id:
+                    type: integer
+                    example: 1
+                  user_name:
+                    type: string
+                    example: "John Doe"
+                  email:
+                    type: string
+                    example: "user@example.com"
+                  mobile_number:
+                    type: string
+                    nullable: true
+                    example: "+919876543210"
+                required:
+                  - message
+                  - token
+                  - user_id
+                  - user_name
+                  - email
+        "401":
+          description: Unauthorized - Invalid Google token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token"
+                  details:
+                    type: string
+                    nullable: true
+                    example: "Token signature verification failed"
+                required:
+                  - error
+        "422":
+          description: Unprocessable entity - Failed to create or update user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to create or update user"
+                  details:
+                    type: string
+                    nullable: true
+                    example: "Email can't be blank"
+                required:
+                  - error

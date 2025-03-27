@@ -3,8 +3,8 @@ Rails.application.routes.draw do
   mount Rswag::Api::Engine => "/swagger"
   namespace :api do
     namespace :v1 do
-      post "users" => "users#signup"
-      post "users/login" => "users#login"
+      post "users" => "users#create"
+      post "sessions" => "users#login"
       post "users/password/forgot" => "users#forgot_password"
       post "users/password/reset/:id" => "users#reset_password"
 
@@ -41,7 +41,6 @@ Rails.application.routes.draw do
       patch "carts" => "carts#update_quantity"
 
       post "google_auth" => "google_auth#create"
-      # post 'facebook_auth', to: 'facebook_auth#create
     end
   end
 end

@@ -1,5 +1,5 @@
 class UserService
-  def self.signup(user_params)
+  def self.create(user_params)
     user = User.new(user_params)
     if user.save
       { success: true, message: "User created successfully", user: user }
