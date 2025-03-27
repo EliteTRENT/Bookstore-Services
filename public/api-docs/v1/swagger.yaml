@@ -1852,19 +1852,33 @@ paths:
                 order:
                   type: object
                   properties:
-                    book_id:
+                    user_id:
                       type: integer
                       example: 1
+                    book_id:
+                      type: integer
+                      example: 5
                     address_id:
                       type: integer
-                      example: 10
+                      example: 20
                     quantity:
                       type: integer
                       example: 2
+                    price_at_purchase:
+                      type: number
+                      format: float
+                      example: 19.99
+                    total_price:
+                      type: number
+                      format: float
+                      example: 39.98
                   required:
+                    - user_id
                     - book_id
                     - address_id
                     - quantity
+                    - price_at_purchase
+                    - total_price
       responses:
         "201":
           description: Order successfully placed
@@ -1882,23 +1896,26 @@ paths:
                       id:
                         type: integer
                         example: 101
-                      book_id:
+                      user_id:
                         type: integer
                         example: 1
+                      book_id:
+                        type: integer
+                        example: 5
                       address_id:
                         type: integer
-                        example: 10
+                        example: 20
                       quantity:
                         type: integer
                         example: 2
                       price_at_purchase:
                         type: number
                         format: float
-                        example: 299.99
+                        example: 19.99
                       total_price:
                         type: number
                         format: float
-                        example: 599.98
+                        example: 39.98
                       status:
                         type: string
                         example: "pending"
@@ -1934,6 +1951,7 @@ paths:
                     items:
                       type: string
                     example: ["Quantity must be greater than 0"]
+
     get:
       summary: Get All Orders
       description: Retrieves all orders for the authenticated user based on the provided JWT token.

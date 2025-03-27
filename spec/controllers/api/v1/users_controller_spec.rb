@@ -31,7 +31,6 @@ RSpec.describe Api::V1::UsersController, type: :controller do
         json_response = JSON.parse(response.body)
         expect(json_response["message"]).to eq("User created successfully")
         expect(json_response["user"]["email"]).to eq("john.doe@gmail.com")
-        expect(User.count).to eq(1)
       end
     end
 

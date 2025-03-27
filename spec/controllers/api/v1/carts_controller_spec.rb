@@ -134,8 +134,7 @@ RSpec.describe Api::V1::CartsController, type: :controller do
         let(:cart_item) { Cart.new(user_id: user.id, book_id: book.id, quantity: 2, is_deleted: true) }
 
         it "soft deletes the book from the cart" do
-          # Stub with nil as the first argument to match current controller behavior
-          allow(CartService).to receive(:soft_delete_book).with(nil, user.id).and_return(
+          allow(CartService).to receive(:soft_delete_book).with(book.id.to_s, user.id).and_return(
             { success: true, message: "Book removed from cart", book: cart_item }
           )
           delete :soft_delete_book, params: { book_id: book.id }
@@ -148,8 +147,7 @@ RSpec.describe Api::V1::CartsController, type: :controller do
 
       context "with a non-existent cart item" do
         it "returns a not found response" do
-          # Stub with nil as the first argument to match current controller behavior
-          allow(CartService).to receive(:soft_delete_book).with(nil, user.id).and_return(
+          allow(CartService).to receive(:soft_delete_book).with("999", user.id).and_return(
             { success: false, error: "Cart item not found" }
           )
           delete :soft_delete_book, params: { book_id: 999 }
@@ -161,8 +159,7 @@ RSpec.describe Api::V1::CartsController, type: :controller do
 
       context "with an error during deletion" do
         it "returns an unprocessable entity response" do
-          # Stub with nil as the first argument to match current controller behavior
-          allow(CartService).to receive(:soft_delete_book).with(nil, user.id).and_return(
+          allow(CartService).to receive(:soft_delete_book).with(book.id.to_s, user.id).and_return(
             { success: false, error: "Error updating cart item: Database error" }
           )
           delete :soft_delete_book, params: { book_id: book.id }
