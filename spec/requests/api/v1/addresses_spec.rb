@@ -138,6 +138,7 @@ RSpec.describe AddressService, type: :service do
       end
     end
 
+
     context "when the address does not exist" do
       it "returns an error" do
         result = AddressService.update_address(user, 999, { street: "456 New St" })
