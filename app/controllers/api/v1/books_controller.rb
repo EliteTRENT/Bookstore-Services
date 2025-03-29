@@ -2,12 +2,13 @@ class Api::V1::BooksController < ApplicationController
   # Apply authentication to all actions except 'index' and 'search_suggestions'
   before_action :authenticate_request, except: [ :index, :search_suggestions, :show ]
 
+  before_action :restrict_to_admin, only: [:create, :update, :toggle_delete]
   def create
     Rails.logger.info "Params received: #{params.inspect}"
     if params[:books].present?
       result = BookService.create_book(file: params[:books])
     else
-      result = BookService.create_book(book_params)
+      result = BookService.create_book(book_params) 
     end
 
     if result[:success]

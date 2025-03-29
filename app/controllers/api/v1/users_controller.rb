@@ -1,9 +1,16 @@
+# app/controllers/api/v1/users_controller.rb
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [ :create, :login, :forgot_password, :reset_password ]
+  skip_before_action :authenticate_request, only: [:create, :login, :forgot_password, :reset_password]
+  before_action :authenticate_request, only: [:create]
+  before_action :restrict_to_admin, only: :create
+
   def create
     result = UserService.create(user_params)
     if result[:success]
-      render json: { message: result[:message], user: result[:user] }, status: :created
+      render json: { 
+        message: result[:message], 
+        user: result[:user].slice(:id, :name, :email, :mobile_number, :role) # Include role
+      }, status: :created
     else
       render json: { errors: result[:error] }, status: :unprocessable_entity
     end
@@ -19,7 +26,8 @@ class Api::V1::UsersController < ApplicationController
           user_id: result[:user_id],
           user_name: result[:user_name],
           email: result[:email],
-          mobile_number: result[:mobile_number]
+          mobile_number: result[:mobile_number],
+          role: result[:role]
         }, status: :ok
       else
         render json: { errors: result[:error] }, status: :unprocessable_entity
@@ -36,7 +44,7 @@ class Api::V1::UsersController < ApplicationController
   def forgot_password
     result = UserService.forgot_password(forget_params)
     if result[:success]
-      render json: { success: true, message: result[:message], otp: result[:otp], user_id: result[:user_id]  }, status: :ok
+      render json: { success: true, message: result[:message], otp: result[:otp], user_id: result[:user_id] }, status: :ok
     else
       render json: { success: false, errors: result[:error] }, status: :unprocessable_entity
     end
@@ -52,8 +60,9 @@ class Api::V1::UsersController < ApplicationController
   end
 
   private
+
   def user_params
-    params.require(:user).permit(:name, :email, :password, :mobile_number)
+    params.require(:user).permit(:name, :email, :password, :mobile_number, :role) # Add role
   end
 
   def login_params
