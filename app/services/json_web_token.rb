@@ -5,25 +5,25 @@ class JsonWebToken
   SECRET_KEY = ENV["SECRET_KEY"] || "your-secret-key-here"
   REFRESH_SECRET_KEY = ENV["REFRESH_SECRET_KEY"] || "your-refresh-secret-key-here" # Separate key for refresh tokens
 
-  # Encode an access token (short-lived, e.g., 1 minute as in C1)
-  def self.encode(payload, exp = 1.minute.from_now)
-    payload[:exp] = exp.to_i
+  # Encode an access token (short-lived, e.g., 15 minutes)
+  def self.encode(payload, expiration: 1.minute.from_now)
+    payload[:exp] = expiration.to_i
     Rails.logger.info "Encoding JWT access token with payload: #{payload.inspect}"
     token = JWT.encode(payload, SECRET_KEY, "HS256")
     Rails.logger.info "Generated JWT access token: #{token}"
     token
   end
 
-  # Encode a refresh token (long-lived, e.g., 30 days as in C2)
-  def self.encode_refresh(payload, exp = 1.week.from_now)
-    payload[:exp] = exp.to_i
+  # Encode a refresh token (long-lived, e.g., 30 days)
+  def self.encode_refresh(payload, expiration: 30.days.from_now)
+    payload[:exp] = expiration.to_i
     Rails.logger.info "Encoding JWT refresh token with payload: #{payload.inspect}"
     token = JWT.encode(payload, REFRESH_SECRET_KEY, "HS256")
     Rails.logger.info "Generated JWT refresh token: #{token}"
     token
   end
 
-  # Decode an access token (aligned with C1’s style)
+  # Decode an access token
   def self.decode(token)
     Rails.logger.info "Decoding JWT access token: #{token}"
     decoded = JWT.decode(token, SECRET_KEY, true, algorithm: "HS256")
@@ -37,7 +37,7 @@ class JsonWebToken
     nil
   end
 
-  # Decode a refresh token (new, aligned with C1’s style)
+  # Decode a refresh token
   def self.decode_refresh(token)
     Rails.logger.info "Decoding JWT refresh token: #{token}"
     decoded = JWT.decode(token, REFRESH_SECRET_KEY, true, algorithm: "HS256")

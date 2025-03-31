@@ -1,14 +1,13 @@
 # app/controllers/api/v1/users_controller.rb
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [:create, :login, :forgot_password, :reset_password, :refresh ]
-  before_action :authenticate_request, only: [:create]
+  skip_before_action :authenticate_request
   before_action :restrict_to_admin, only: :create
 
   def create
     result = UserService.create(user_params)
     if result[:success]
-      render json: { 
-        message: result[:message], 
+      render json: {
+        message: result[:message],
         user: result[:user].slice(:id, :name, :email, :mobile_number, :role) # Include role
       }, status: :created
     else
