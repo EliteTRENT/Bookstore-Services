@@ -11,7 +11,7 @@ class ApplicationController < ActionController::API
     end
     begin
       decoded = JsonWebToken.decode(token)
-      @current_user = User.find_by(id: decoded["id"]) # Use id from token
+      @current_user = User.find_by(id: decoded["user_id"])
       unless @current_user
         render json: { error: "Session expired" }, status: :unauthorized
         return

@@ -12,13 +12,12 @@ class UserService
     user = User.find_by(email: login_params[:email])
     if user
       if user.authenticate(login_params[:password])
-        token = JsonWebToken.encode({ name: user.name, email: user.email, id: user.id })
         begin
           UserMailer.enqueue_welcome_email(user)
         rescue StandardError => e
           Rails.logger.error "Failed to enqueue welcome email: #{e.message}"
         end
-        { success: true, message: "Login successful", token: token, user_id: user.id, user_name: user.name, email: user.email, mobile_number: user.mobile_number }
+        { success: true, message: "Login successful", user_id: user.id, user_name: user.name, email: user.email, mobile_number: user.mobile_number }
       else
         { success: false, error: "Wrong email or password" }
       end

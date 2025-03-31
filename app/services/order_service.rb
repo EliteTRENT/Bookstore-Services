@@ -1,45 +1,29 @@
 class OrderService
-  def self.update_order_status(token, order_id, status)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
-    return { success: false, error: "Invalid token" } unless token_email
-
-    user = User.find_by(email: token_email)
+  def self.update_order_status(user_id, order_id, status)
+    user = User.find_by(id: user_id)
     return { success: false, error: "User not found" } unless user
 
     order = user.orders.find_by(id: order_id)
     return { success: false, error: "Order not found" } unless order
-
     return { success: false, error: "Only pending orders can be cancelled" } unless order.status == "pending"
 
     ActiveRecord::Base.transaction do
-      # Update status without triggering validations
       order.update_columns(status: status)
       if status == "cancelled"
         book = order.book
-        # Ensure book exists and update quantity
         return { success: false, error: "Associated book not found" } unless book
         book.update!(quantity: book.quantity + order.quantity)
       end
       { success: true, message: "Order status updated successfully", order: order }
     end
   rescue ActiveRecord::RecordInvalid => e
-    # This catches validation errors from book.update!
     { success: false, error: e.record.errors.full_messages }
   rescue StandardError => e
-    # This catches other unexpected errors (e.g., database issues)
     { success: false, error: "An unexpected error occurred: #{e.message}" }
   end
 
-  # Other methods remain unchanged
-  def self.create_order(token, order_params)
-    token_payload = JsonWebToken.decode(token)
-    return { success: false, error: "Invalid token" } unless token_payload
-
-    token_email = token_payload.is_a?(Hash) ? token_payload[:email] || token_payload["email"] : token_payload
-    return { success: false, error: "Invalid token: email not found" } unless token_email
-
-    user = User.find_by(email: token_email)
+  def self.create_order(user_id, order_params)
+    user = User.find_by(id: user_id)
     return { success: false, error: "User not found" } unless user
 
     book = Book.find_by(id: order_params[:book_id])
@@ -86,12 +70,8 @@ class OrderService
     { success: false, error: e.message }
   end
 
-  def self.index_orders(token)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
-    return { success: false, error: "Invalid token" } unless token_email
-
-    user = User.find_by(email: token_email)
+  def self.index_orders(user_id)
+    user = User.find_by(id: user_id)
     return { success: false, error: "User not found" } unless user
 
     orders = user.orders
@@ -100,12 +80,8 @@ class OrderService
     { success: true, orders: orders }
   end
 
-  def self.get_order_by_id(token, order_id)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
-    return { success: false, error: "Invalid token" } unless token_email
-
-    user = User.find_by(email: token_email)
+  def self.get_order_by_id(user_id, order_id)
+    user = User.find_by(id: user_id)
     return { success: false, error: "User not found" } unless user
 
     order = user.orders.find_by(id: order_id)

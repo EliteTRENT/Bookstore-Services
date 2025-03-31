@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [ :create, :login, :forgot_password, :reset_password ]
+  skip_before_action :authenticate_request, only: [ :create, :login, :forgot_password, :reset_password, :refresh ]
   def create
     result = UserService.create(user_params)
     if result[:success]
@@ -13,9 +13,15 @@ class Api::V1::UsersController < ApplicationController
     begin
       result = UserService.login(login_params)
       if result[:success]
+        access_payload = { user_id: result[:user_id], email: result[:email] }
+        refresh_payload = { user_id: result[:user_id], email: result[:email] }
+        access_token = JsonWebToken.encode(access_payload)
+        refresh_token = JsonWebToken.encode_refresh(refresh_payload)
+
         render json: {
           message: result[:message],
-          token: result[:token],
+          token: access_token,
+          refresh_token: refresh_token,
           user_id: result[:user_id],
           user_name: result[:user_name],
           email: result[:email],
@@ -30,6 +36,24 @@ class Api::V1::UsersController < ApplicationController
       Rails.logger.error "Login error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       render json: { error: "Internal server error", details: e.message }, status: :internal_server_error
+    end
+  end
+
+  def refresh
+    refresh_token = params[:refresh_token]
+    unless refresh_token
+      render json: { errors: "Refresh token required" }, status: :bad_request
+      return
+    end
+
+    new_token = JsonWebToken.refresh(refresh_token)
+    if new_token
+      render json: {
+        message: "Token refreshed successfully",
+        token: new_token[:access_token]
+      }, status: :ok
+    else
+      render json: { errors: "Invalid or expired refresh token" }, status: :unauthorized
     end
   end
 

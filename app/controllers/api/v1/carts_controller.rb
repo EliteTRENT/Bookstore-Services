@@ -18,13 +18,7 @@ module Api
       end
 
       def soft_delete_book
-        token = request.headers["Authorization"]&.split(" ")&.last
-        token_full = JsonWebToken.decode(token)
-        token_email = token_full["email"]
-        user = User.find_by(email: token_email)
-        return render json: { error: "User not found" }, status: :unauthorized unless user
-
-        result = CartService.soft_delete_book(params[:book_id], user.id) # Pass book_id and current_user.id
+        result = CartService.soft_delete_book(params[:book_id], @current_user.id) # Pass book_id and current_user.id
         if result[:success]
           render json: { message: result[:message], book: result[:book] }, status: :ok
         else
@@ -37,11 +31,7 @@ module Api
       end
 
       def update_quantity
-        token = request.headers["Authorization"]&.split(" ")&.last
-        token_full = JsonWebToken.decode(token)
-        token_email = token_full["email"]
-        user = User.find_by(email: token_email)
-        result = CartService.update_quantity(cart_params, user.id) # Use cart_params
+        result = CartService.update_quantity(cart_params, @current_user.id) 
         if result[:success]
           render json: { success: true, message: result[:message], cart: result[:cart] }, status: :ok
         else

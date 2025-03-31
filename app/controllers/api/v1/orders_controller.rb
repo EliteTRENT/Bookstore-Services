@@ -2,65 +2,49 @@ class Api::V1::OrdersController < ApplicationController
   before_action :authenticate_request
 
   def update_status
-    token = request.headers["Authorization"]&.split(" ")&.last
-    result = OrderService.update_order_status(token, params[:id], params[:status])
-    if result[:success]
-      render json: { message: result[:message], order: result[:order] }, status: :ok
-    elsif result[:error] == "Invalid token"
-      render json: { error: result[:error] }, status: :unauthorized
-    elsif result[:error] == "User not found" || result[:error] == "Order not found"
-      render json: { error: result[:error] }, status: :not_found
-    else
-      render json: { errors: Array(result[:error]) }, status: :unprocessable_entity # Ensure errors is an array
-    end
+    return render json: { error: "Unauthorized" }, status: :unauthorized unless @current_user
+
+    result = OrderService.update_order_status(@current_user.id, params[:id], params[:status])
+    handle_response(result)
   end
 
-  # Other actions (create, index, show) remain unchanged
   def create
-    token = request.headers["Authorization"]&.split(" ")&.last
-    result = OrderService.create_order(token, order_params)
-    if result[:success]
-      render json: { success: true, message: result[:message], order: result[:order] }, status: :created
-    elsif result[:error] == "Invalid token"
-      render json: { error: result[:error] }, status: :unauthorized
-    elsif result[:error] == "User not found" || result[:error] == "Book not found" || result[:error] == "Invalid address"
-      render json: { error: result[:error] }, status: :not_found
-    else
-      render json: { errors: result[:error] }, status: :unprocessable_entity
-    end
+    return render json: { error: "Unauthorized" }, status: :unauthorized unless @current_user
+
+    result = OrderService.create_order(@current_user.id, order_params)
+    handle_response(result, :created)
   end
 
   def index
-    token = request.headers["Authorization"]&.split(" ")&.last
-    result = OrderService.index_orders(token)
-    if result[:success]
-      render json: { orders: result[:orders] }, status: :ok
-    elsif result[:error] == "Invalid token"
-      render json: { error: result[:error] }, status: :unauthorized
-    elsif result[:error] == "User not found"
-      render json: { error: result[:error] }, status: :not_found
-    else
-      render json: { errors: result[:error] }, status: :unprocessable_entity
-    end
+    return render json: { error: "Unauthorized" }, status: :unauthorized unless @current_user
+
+    result = OrderService.index_orders(@current_user.id)
+    handle_response(result)
   end
 
   def show
-    token = request.headers["Authorization"]&.split(" ")&.last
-    result = OrderService.get_order_by_id(token, params[:id])
-    if result[:success]
-      render json: { order: result[:order] }, status: :ok
-    elsif result[:error] == "Invalid token"
-      render json: { error: result[:error] }, status: :unauthorized
-    elsif result[:error] == "User not found" || result[:error] == "Order not found"
-      render json: { error: result[:error] }, status: :not_found
-    else
-      render json: { errors: result[:error] }, status: :unprocessable_entity
-    end
+    return render json: { error: "Unauthorized" }, status: :unauthorized unless @current_user
+
+    result = OrderService.get_order_by_id(@current_user.id, params[:id])
+    handle_response(result)
   end
 
   private
 
   def order_params
     params.require(:order).permit(:book_id, :address_id, :quantity, :price_at_purchase, :total_price)
+  end
+
+  def handle_response(result, success_status = :ok)
+    if result[:success]
+      render json: result.except(:success), status: success_status
+    else
+      status = case result[:error]
+               when "Invalid token" then :unauthorized
+               when "User not found", "Order not found", "Book not found", "Invalid address" then :not_found
+               else :unprocessable_entity
+               end
+      render json: { error: result[:error] }, status: status
+    end
   end
 end

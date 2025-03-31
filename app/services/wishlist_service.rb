@@ -41,4 +41,14 @@ class WishlistService
     wishlist_item.update(is_deleted: true)
     { success: true, message: "Book removed from wishlist!" }
   end
+
+  def self.mark_book_as_deleted_by_book_id(user, book_id)
+    return { success: false, error: "Invalid user" } unless user
+
+    wishlist_item = user.wishlists.find_by(book_id: book_id, is_deleted: false)
+    return { success: false, error: "Book not found in wishlist" } unless wishlist_item
+
+    wishlist_item.update(is_deleted: true)
+    { success: true, message: "Book removed from wishlist!" }
+  end
 end
