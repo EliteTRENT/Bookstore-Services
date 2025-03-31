@@ -1,6 +1,8 @@
 class WishlistService
+  INVALID_USER_ERROR = { success: false, error: "Invalid user" }.freeze
+
   def self.create(user, wishlist_params)
-    return { success: false, error: "Invalid user" } unless user
+    return INVALID_USER_ERROR unless user
 
     book = Book.find_by(id: wishlist_params[:book_id])
     return { success: false, error: "Book not found" } unless book
@@ -14,7 +16,7 @@ class WishlistService
   end
 
   def self.index(user)
-    return { success: false, error: "Invalid user" } unless user
+    return INVALID_USER_ERROR unless user
 
     wishlists = user.wishlists.where(is_deleted: false).includes(:book)
 
@@ -33,7 +35,7 @@ class WishlistService
   end
 
   def self.mark_book_as_deleted(user, wishlist_id)
-    return { success: false, error: "Invalid user" } unless user
+    return INVALID_USER_ERROR unless user
 
     wishlist_item = user.wishlists.find_by(id: wishlist_id, is_deleted: false)
     return { success: false, error: "Wishlist item not found" } unless wishlist_item

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_22_084642) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_28_051040) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -89,6 +89,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_22_084642) do
     t.string "google_id"
     t.string "otp"
     t.datetime "otp_expires_at"
+    t.string "role", default: "customer", null: false
+    t.index ["role"], name: "index_users_on_role"
   end
 
   create_table "wishlists", force: :cascade do |t|

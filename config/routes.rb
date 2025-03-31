@@ -12,7 +12,7 @@ Rails.application.routes.draw do
       post "wishlists" => "wishlists#create"
       get "wishlists" => "wishlists#index"
       patch "wishlists/:wishlist_id" => "wishlists#mark_book_as_deleted"
-      delete "wishlists/:book_id" => "wishlists#mark_book_as_deleted"
+      patch "wishlists/:book_id" => "wishlists#mark_book_as_deleted"
 
       post "books" => "books#create"
       get "books/search_suggestions" => "books#search_suggestions"

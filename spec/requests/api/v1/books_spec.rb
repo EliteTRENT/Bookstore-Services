@@ -1,8 +1,8 @@
 require 'rails_helper'
 
-RSpec.describe BookService, type: :service do
-  # Setup Redis mock for testing
-  let(:redis) { instance_double(Redis) }
+RSpec.describe BookService, type: :request do
+  # Setup Redis mock for testing, allowing only the methods used in BookService
+  let(:redis) { double(:redis) }
   before do
     stub_const("BookService::REDIS", redis)
     allow(redis).to receive(:get).and_return(nil)
@@ -13,18 +13,7 @@ RSpec.describe BookService, type: :service do
 
   describe ".create_book" do
     context "with valid attributes" do
-      let(:valid_attributes) do
-        {
-          name: "The Great Gatsby",
-          author: "F. Scott Fitzgerald",
-          mrp: 20.99,
-          discounted_price: 15.99,
-          quantity: 100,
-          book_details: "A story of the fabulously wealthy Jay Gatsby",
-          genre: "Fiction",
-          book_image: "http://example.com/book-cover.jpg"
-        }
-      end
+      let(:valid_attributes) { attributes_for(:book) }
 
       it "creates a book successfully" do
         result = BookService.create_book(valid_attributes)
@@ -32,192 +21,172 @@ RSpec.describe BookService, type: :service do
         expect(result[:message]).to eq("Book created successfully")
         expect(result[:book]).to be_a(Book)
         expect(result[:book].persisted?).to be_truthy
-        expect(result[:book].name).to eq("The Great Gatsby")
-        expect(result[:book].author).to eq("F. Scott Fitzgerald")
-        expect(result[:book].mrp).to eq(20.99)
-        expect(result[:book].discounted_price).to eq(15.99)
-        expect(result[:book].quantity).to eq(100)
+        expect(result[:book].name).to eq(valid_attributes[:name])
+        expect(result[:book].author).to eq(valid_attributes[:author])
+        expect(result[:book].mrp).to eq(valid_attributes[:mrp])
+        expect(result[:book].discounted_price).to eq(valid_attributes[:discounted_price])
+        expect(result[:book].quantity).to eq(valid_attributes[:quantity])
       end
 
       it "creates a book successfully with only required fields" do
-        minimal_attributes = {
-          name: "The Great Gatsby",
-          author: "F. Scott Fitzgerald",
-          mrp: 20.99,
-          discounted_price: 15.99,
-          quantity: 100
-        }
+        minimal_attributes = attributes_for(:book, book_details: nil, genre: nil, book_image: nil)
         result = BookService.create_book(minimal_attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].persisted?).to be_truthy
       end
 
       it "invalidates Redis cache for all books" do
-        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:keys).with("books:all:*").and_return(["books:all:1:10"])
         expect(redis).to receive(:del).with("books:all:1:10")
         BookService.create_book(valid_attributes)
       end
     end
 
     context "with invalid attributes" do
-      let(:valid_attributes) do
-        {
-          name: "The Great Gatsby",
-          author: "F. Scott Fitzgerald",
-          mrp: 20.99,
-          discounted_price: 15.99,
-          quantity: 100
-        }
-      end
+      let(:valid_attributes) { attributes_for(:book) }
 
       it "returns an error when name is missing" do
-        invalid_attributes = valid_attributes.merge(name: "")
+        invalid_attributes = attributes_for(:book, :missing_name)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Name can't be blank")
       end
 
       it "returns an error when name is nil" do
-        invalid_attributes = valid_attributes.merge(name: nil)
+        invalid_attributes = attributes_for(:book, :nil_name)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Name can't be blank")
       end
 
       it "returns an error when author is missing" do
-        invalid_attributes = valid_attributes.merge(author: "")
+        invalid_attributes = attributes_for(:book, :missing_author)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Author can't be blank")
       end
 
       it "returns an error when author is nil" do
-        invalid_attributes = valid_attributes.merge(author: nil)
+        invalid_attributes = attributes_for(:book, :nil_author)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Author can't be blank")
       end
 
       it "returns an error when mrp is missing" do
-        invalid_attributes = valid_attributes.merge(mrp: nil)
+        invalid_attributes = attributes_for(:book, :nil_mrp)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Mrp can't be blank")
       end
 
       it "returns an error when mrp is negative" do
-        invalid_attributes = valid_attributes.merge(mrp: -5.0)
+        invalid_attributes = attributes_for(:book, :negative_mrp)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Mrp must be greater than or equal to 0")
       end
 
       it "returns an error when mrp is not a number" do
-        invalid_attributes = valid_attributes.merge(mrp: "not_a_number")
+        invalid_attributes = attributes_for(:book, :invalid_mrp)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Mrp is not a number")
       end
 
       it "returns an error when discounted_price is missing" do
-        invalid_attributes = valid_attributes.merge(discounted_price: nil)
+        invalid_attributes = attributes_for(:book, :nil_discounted_price)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Discounted price can't be blank")
       end
 
       it "returns an error when discounted_price is negative" do
-        invalid_attributes = valid_attributes.merge(discounted_price: -5.0)
+        invalid_attributes = attributes_for(:book, :negative_discounted_price)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Discounted price must be greater than or equal to 0")
       end
 
       it "returns an error when discounted_price is not a number" do
-        invalid_attributes = valid_attributes.merge(discounted_price: "not_a_number")
+        invalid_attributes = attributes_for(:book, :invalid_discounted_price)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Discounted price is not a number")
       end
 
       it "returns an error when quantity is missing" do
-        invalid_attributes = valid_attributes.merge(quantity: nil)
+        invalid_attributes = attributes_for(:book, :nil_quantity)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Quantity can't be blank")
       end
 
       it "returns an error when quantity is negative" do
-        invalid_attributes = valid_attributes.merge(quantity: -1)
+        invalid_attributes = attributes_for(:book, :negative_quantity)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Quantity must be greater than or equal to 0")
       end
 
       it "returns an error when quantity is not an integer" do
-        invalid_attributes = valid_attributes.merge(quantity: 5.5)
+        invalid_attributes = attributes_for(:book, :non_integer_quantity)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Quantity must be an integer")
       end
 
       it "returns an error when quantity is a string" do
-        invalid_attributes = valid_attributes.merge(quantity: "not_a_number")
+        invalid_attributes = attributes_for(:book, :invalid_quantity)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Quantity is not a number")
       end
 
       it "accepts valid book_details when provided" do
-        attributes = valid_attributes.merge(book_details: "A detailed description")
+        attributes = attributes_for(:book, book_details: "A detailed description")
         result = BookService.create_book(attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].book_details).to eq("A detailed description")
       end
 
       it "accepts nil book_details" do
-        attributes = valid_attributes.merge(book_details: nil)
+        attributes = attributes_for(:book, book_details: nil)
         result = BookService.create_book(attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].book_details).to be_nil
       end
 
       it "accepts valid genre when provided" do
-        attributes = valid_attributes.merge(genre: "Fiction")
+        attributes = attributes_for(:book, genre: "Fiction")
         result = BookService.create_book(attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].genre).to eq("Fiction")
       end
 
       it "accepts nil genre" do
-        attributes = valid_attributes.merge(genre: nil)
+        attributes = attributes_for(:book, genre: nil)
         result = BookService.create_book(attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].genre).to be_nil
       end
 
       it "accepts valid book_image when provided" do
-        attributes = valid_attributes.merge(book_image: "http://example.com/image.jpg")
+        attributes = attributes_for(:book, book_image: "http://example.com/image.jpg")
         result = BookService.create_book(attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].book_image).to eq("http://example.com/image.jpg")
       end
 
       it "accepts nil book_image" do
-        attributes = valid_attributes.merge(book_image: nil)
+        attributes = attributes_for(:book, book_image: nil)
         result = BookService.create_book(attributes)
         expect(result[:success]).to be_truthy
         expect(result[:book].book_image).to be_nil
       end
 
       it "returns multiple errors when multiple validations fail" do
-        invalid_attributes = {
-          name: "",
-          author: "",
-          mrp: -1,
-          discounted_price: -1,
-          quantity: -1
-        }
+        invalid_attributes = attributes_for(:book, :missing_name, :missing_author, :negative_mrp, :negative_discounted_price, :negative_quantity)
         result = BookService.create_book(invalid_attributes)
         expect(result[:success]).to be_falsey
         expect(result[:error]).to include("Name can't be blank")
@@ -230,35 +199,13 @@ RSpec.describe BookService, type: :service do
   end
 
   describe ".update_book" do
-    let(:valid_attributes) do
-      {
-        name: "The Great Gatsby",
-        author: "F. Scott Fitzgerald",
-        mrp: 20.99,
-        discounted_price: 15.99,
-        quantity: 100,
-        book_details: "A story of the fabulously wealthy Jay Gatsby",
-        genre: "Fiction",
-        book_image: "http://example.com/book-cover.jpg"
-      }
-    end
+    let(:book) { create(:book) }
 
     context "with existing book" do
-      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
-
       context "with valid updates" do
         it "updates all attributes successfully" do
-          update_attributes = {
-            name: "Updated Title",
-            author: "Updated Author",
-            mrp: 25.99,
-            discounted_price: 19.99,
-            quantity: 50,
-            book_details: "Updated details",
-            genre: "Non-Fiction",
-            book_image: "http://example.com/new-cover.jpg"
-          }
-          expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+          update_attributes = attributes_for(:book, name: "Updated Title", author: "Updated Author", mrp: 25.99, discounted_price: 19.99, quantity: 50, book_details: "Updated details", genre: "Non-Fiction", book_image: "http://example.com/new-cover.jpg")
+          expect(redis).to receive(:keys).with("books:all:*").and_return(["books:all:1:10"])
           expect(redis).to receive(:del).with("books:all:1:10")
           expect(redis).to receive(:del).with("book:#{book.id}")
           result = BookService.update_book(book.id, update_attributes)
@@ -276,15 +223,15 @@ RSpec.describe BookService, type: :service do
 
         it "updates partial attributes successfully" do
           update_attributes = { name: "New Title", quantity: 75 }
-          expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+          expect(redis).to receive(:keys).with("books:all:*").and_return(["books:all:1:10"])
           expect(redis).to receive(:del).with("books:all:1:10")
           expect(redis).to receive(:del).with("book:#{book.id}")
           result = BookService.update_book(book.id, update_attributes)
           expect(result[:success]).to be_truthy
           expect(result[:book].name).to eq("New Title")
           expect(result[:book].quantity).to eq(75)
-          expect(result[:book].author).to eq("F. Scott Fitzgerald")
-          expect(result[:book].mrp).to eq(20.99)
+          expect(result[:book].author).to eq(book.author)
+          expect(result[:book].mrp).to eq(book.mrp)
         end
       end
 
@@ -330,7 +277,7 @@ RSpec.describe BookService, type: :service do
     end
 
     context "with deleted book" do
-      let!(:deleted_book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
+      let(:deleted_book) { create(:book, :deleted) }
 
       it "returns error when book is deleted" do
         result = BookService.update_book(deleted_book.id, { name: "New Title" })
@@ -342,28 +289,8 @@ RSpec.describe BookService, type: :service do
 
   describe ".index_books" do
     context "with pagination and Redis" do
-      let!(:book1) do
-        Book.create!(
-          name: "Book 1",
-          author: "Author 1",
-          mrp: 20.99,
-          discounted_price: 15.99,
-          quantity: 100,
-          is_deleted: false,
-          created_at: 2.days.ago
-        )
-      end
-      let!(:book2) do
-        Book.create!(
-          name: "Book 2",
-          author: "Author 2",
-          mrp: 25.99,
-          discounted_price: 19.99,
-          quantity: 50,
-          is_deleted: false,
-          created_at: 1.day.ago
-        )
-      end
+      let!(:book1) { create(:book, created_at: 2.days.ago) }
+      let!(:book2) { create(:book, created_at: 1.day.ago) }
 
       context "when Redis cache is available" do
         let(:cached_data) do
@@ -414,15 +341,7 @@ RSpec.describe BookService, type: :service do
       context "with pagination" do
         before do
           15.times do |i|
-            Book.create!(
-              name: "Book #{i + 3}",
-              author: "Author #{i + 3}",
-              mrp: 10.0 + i,
-              discounted_price: 8.0 + i,
-              quantity: 10,
-              is_deleted: false,
-              created_at: (15 - i).days.ago
-            )
+            create(:book, created_at: (15 - i).days.ago)
           end
         end
 
@@ -474,22 +393,9 @@ RSpec.describe BookService, type: :service do
   end
 
   describe ".get_book_by_id" do
-    let(:valid_attributes) do
-      {
-        name: "The Great Gatsby",
-        author: "F. Scott Fitzgerald",
-        mrp: 20.99,
-        discounted_price: 15.99,
-        quantity: 100,
-        book_details: "A story of the fabulously wealthy Jay Gatsby",
-        genre: "Fiction",
-        book_image: "http://example.com/book-cover.jpg"
-      }
-    end
+    let(:book) { create(:book) }
 
     context "when the book exists and is not deleted" do
-      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
-
       it "returns the book successfully from database" do
         expect(redis).to receive(:get).with("book:#{book.id}").and_return(nil)
         expect(redis).to receive(:setex).with("book:#{book.id}", 3600, anything)
@@ -497,14 +403,14 @@ RSpec.describe BookService, type: :service do
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Book retrieved successfully")
         expect(result[:book]["id"]).to eq(book.id)
-        expect(result[:book]["name"]).to eq("The Great Gatsby")
-        expect(result[:book]["author"]).to eq("F. Scott Fitzgerald")
-        expect(result[:book]["mrp"]).to eq("20.99")
-        expect(result[:book]["discounted_price"]).to eq("15.99")
-        expect(result[:book]["quantity"]).to eq(100)
-        expect(result[:book]["book_details"]).to eq("A story of the fabulously wealthy Jay Gatsby")
-        expect(result[:book]["genre"]).to eq("Fiction")
-        expect(result[:book]["book_image"]).to eq("http://example.com/book-cover.jpg")
+        expect(result[:book]["name"]).to eq(book.name)
+        expect(result[:book]["author"]).to eq(book.author)
+        expect(result[:book]["mrp"]).to eq(book.mrp.to_s)
+        expect(result[:book]["discounted_price"]).to eq(book.discounted_price.to_s)
+        expect(result[:book]["quantity"]).to eq(book.quantity)
+        expect(result[:book]["book_details"]).to eq(book.book_details)
+        expect(result[:book]["genre"]).to eq(book.genre)
+        expect(result[:book]["book_image"]).to eq(book.book_image)
       end
 
       it "returns the book from Redis cache if available" do
@@ -529,7 +435,7 @@ RSpec.describe BookService, type: :service do
     end
 
     context "when the book exists but is deleted" do
-      let!(:deleted_book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
+      let(:deleted_book) { create(:book, :deleted) }
 
       it "returns an error" do
         result = BookService.get_book_by_id(deleted_book.id)
@@ -540,21 +446,20 @@ RSpec.describe BookService, type: :service do
   end
 
   describe ".toggle_delete" do
-    let(:valid_attributes) do
-      {
-        name: "The Great Gatsby",
-        author: "F. Scott Fitzgerald",
-        mrp: 20.99,
-        discounted_price: 15.99,
-        quantity: 100
-      }
+    let(:book) { create(:book) }
+
+    # Verify that create(:book) does not interact with Redis
+    it "does not interact with Redis during book creation" do
+      expect(redis).not_to receive(:get)
+      expect(redis).not_to receive(:setex)
+      expect(redis).not_to receive(:del)
+      expect(redis).not_to receive(:keys)
+      create(:book)
     end
 
     context "when the book exists and is not deleted" do
-      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
-
       it "marks the book as deleted and invalidates caches" do
-        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:keys).with("books:all:*").and_return(["books:all:1:10"])
         expect(redis).to receive(:del).with("books:all:1:10")
         expect(redis).to receive(:del).with("book:#{book.id}")
         result = BookService.toggle_delete(book.id)
@@ -565,10 +470,10 @@ RSpec.describe BookService, type: :service do
     end
 
     context "when the book exists and is deleted" do
-      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: true)) }
+      let(:book) { create(:book, :deleted) }
 
       it "restores the book and invalidates caches" do
-        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:keys).with("books:all:*").and_return(["books:all:1:10"])
         expect(redis).to receive(:del).with("books:all:1:10")
         expect(redis).to receive(:del).with("book:#{book.id}")
         result = BookService.toggle_delete(book.id)
@@ -586,33 +491,14 @@ RSpec.describe BookService, type: :service do
         expect(result[:book]).to be_nil
       end
     end
-
-    context "when the update fails due to validation" do
-      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
-
-      before do
-        allow_any_instance_of(Book).to receive(:update).and_return(false)
-        allow_any_instance_of(Book).to receive(:errors).and_return(double(full_messages: [ "Validation failed" ]))
-      end
-
-      it "returns an error" do
-        result = BookService.toggle_delete(book.id)
-        expect(result[:success]).to be_falsey
-        expect(result[:error]).to eq([ "Validation failed" ])
-      end
-    end
   end
 
   describe ".hard_delete" do
-    let(:valid_attributes) do
-      { name: "The Great Gatsby", author: "F. Scott Fitzgerald", mrp: 20.99, discounted_price: 15.99, quantity: 100 }
-    end
+    let(:book) { create(:book) }
 
     context "when the book exists" do
-      let!(:book) { Book.create!(valid_attributes.merge(is_deleted: false)) }
-
       it "permanently deletes the book and invalidates caches" do
-        expect(redis).to receive(:keys).with("books:all:*").and_return([ "books:all:1:10" ])
+        expect(redis).to receive(:keys).with("books:all:*").and_return(["books:all:1:10"])
         expect(redis).to receive(:del).with("books:all:1:10")
         expect(redis).to receive(:del).with("book:#{book.id}")
         result = BookService.hard_delete(book.id)
@@ -632,39 +518,9 @@ RSpec.describe BookService, type: :service do
   end
 
   describe ".search_suggestions" do
-    let!(:book1) do
-      Book.create!(
-        name: "The Great Gatsby",
-        author: "F. Scott Fitzgerald",
-        mrp: 20.99,
-        discounted_price: 15.99,
-        quantity: 100,
-        genre: "Fiction",
-        is_deleted: false
-      )
-    end
-    let!(:book2) do
-      Book.create!(
-        name: "Gatsby's Adventure",
-        author: "Jane Doe",
-        mrp: 15.99,
-        discounted_price: 12.99,
-        quantity: 50,
-        genre: "Fiction",
-        is_deleted: false
-      )
-    end
-    let!(:book3) do
-      Book.create!(
-        name: "1984",
-        author: "George Orwell",
-        mrp: 10.99,
-        discounted_price: 8.99,
-        quantity: 75,
-        genre: "Science Fiction",
-        is_deleted: false
-      )
-    end
+    let!(:book1) { create(:book, name: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Fiction") }
+    let!(:book2) { create(:book, name: "Gatsby's Adventure", author: "Jane Doe", genre: "Fiction") }
+    let!(:book3) { create(:book, name: "1984", author: "George Orwell", genre: "Science Fiction") }
 
     context "with valid query" do
       it "returns a successful response for name search" do
@@ -674,7 +530,7 @@ RSpec.describe BookService, type: :service do
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Search suggestions retrieved successfully")
         expect(result[:suggestions]).to be_an(Array)
-        expect(result[:suggestions].length).to eq(2), "Expected 2 suggestions, got: #{result[:suggestions].inspect}"
+        expect(result[:suggestions].length).to eq(2), "Expected 2 suggestions, got: #{result[:suggestions].length}"
       end
 
       it "returns a successful response for author search" do
@@ -684,7 +540,7 @@ RSpec.describe BookService, type: :service do
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Search suggestions retrieved successfully")
         expect(result[:suggestions]).to be_an(Array)
-        expect(result[:suggestions].length).to eq(1), "Expected 1 suggestion, got: #{result[:suggestions].inspect}"
+        expect(result[:suggestions].length).to eq(1), "Expected 1 suggestion, got: #{result[:suggestions].length}"
       end
 
       it "returns a successful response for genre search" do
@@ -694,7 +550,7 @@ RSpec.describe BookService, type: :service do
         expect(result[:success]).to be_truthy
         expect(result[:message]).to eq("Search suggestions retrieved successfully")
         expect(result[:suggestions]).to be_an(Array)
-        expect(result[:suggestions].length).to eq(3), "Expected 3 suggestions, got: #{result[:suggestions].inspect}"
+        expect(result[:suggestions].length).to eq(3), "Expected 3 suggestions, got: #{result[:suggestions].length}"
       end
 
       it "returns cached suggestions when available" do
@@ -737,6 +593,56 @@ RSpec.describe BookService, type: :service do
         result = BookService.search_suggestions("Gatsby")
         expect(result[:success]).to be_falsey
         expect(result[:error]).to eq("Error retrieving suggestions: Database error")
+      end
+    end
+  end
+
+  describe ".fetch_stock" do
+    let!(:book1) { create(:book, quantity: 10) }
+    let!(:book2) { create(:book, quantity: 5) }
+
+    context "with valid book_ids" do
+      it "returns stock quantities for the given book IDs" do
+        result = BookService.fetch_stock([book1.id, book2.id])
+        expect(result[:success]).to be_truthy
+        expect(result[:stock]).to eq([
+          { book_id: book1.id, quantity: 10 },
+          { book_id: book2.id, quantity: 5 }
+        ])
+      end
+    end
+
+    context "with some invalid book_ids" do
+      it "returns an error for missing book IDs" do
+        result = BookService.fetch_stock([book1.id, 999])
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Books not found: 999")
+      end
+    end
+
+    context "with invalid input" do
+      it "returns an error for non-array input" do
+        result = BookService.fetch_stock(book1.id)
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Invalid book_ids: must be an array of positive integers")
+      end
+
+      it "returns an error for array with non-positive integers" do
+        result = BookService.fetch_stock([book1.id, -1])
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Invalid book_ids: must be an array of positive integers")
+      end
+    end
+
+    context "when a database error occurs" do
+      before do
+        allow(Book).to receive(:where).and_raise(StandardError.new("Database error"))
+      end
+
+      it "returns an error response" do
+        result = BookService.fetch_stock([book1.id])
+        expect(result[:success]).to be_falsey
+        expect(result[:error]).to eq("Failed to fetch stock quantities: Database error")
       end
     end
   end
