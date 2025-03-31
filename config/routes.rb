@@ -5,12 +5,14 @@ Rails.application.routes.draw do
     namespace :v1 do
       post "users" => "users#create"
       post "sessions" => "users#login"
+      post "sessions/refresh" => "users#refresh"
       post "users/password/forgot" => "users#forgot_password"
       post "users/password/reset/:id" => "users#reset_password"
 
       post "wishlists" => "wishlists#create"
       get "wishlists" => "wishlists#index"
       patch "wishlists/:wishlist_id" => "wishlists#mark_book_as_deleted"
+      patch "wishlists/:book_id" => "wishlists#mark_book_as_deleted"
 
       post "books" => "books#create"
       get "books/search_suggestions" => "books#search_suggestions"

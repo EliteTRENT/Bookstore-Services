@@ -1,45 +1,34 @@
 class OrderService
   INVALID_TOKEN_ERROR = "Invalid token".freeze
 
-  def self.update_order_status(token, order_id, status)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
+  def self.update_order_status(user_id, order_id, status)
+    user = User.find_by(id: user_id)
+    return { success: false, error: "User not found" } unless user
 
-    user_result = validate_user(token_email)
-    return user_result unless user_result[:success]
-
-    order_result = validate_order_for_update(user_result[:user], order_id, status)
+    order_result = validate_order_for_update(user, order_id, status)
     return order_result unless order_result[:success]
 
     update_order_and_book(order_result[:order], status)
   rescue ActiveRecord::RecordInvalid => e
-    { success: false, error: e.record.errors.full_messages }
+    { success: false, error: e.record.errors.full_messages.join(", ") }
   rescue StandardError => e
     { success: false, error: "An unexpected error occurred: #{e.message}" }
   end
 
-  def self.create_order(token, order_params)
-    token_payload = JsonWebToken.decode(token)
-    return { success: false, error: INVALID_TOKEN_ERROR } unless token_payload
+  def self.create_order(user_id, order_params)
+    user = User.find_by(id: user_id)
+    return { success: false, error: "User not found" } unless user
 
-    token_email = token_payload.is_a?(Hash) ? token_payload[:email] || token_payload["email"] : token_payload
-    user_result = validate_user(token_email)
-    return user_result unless user_result[:success]
-
-    validation_result = validate_order_params(user_result[:user], order_params)
+    validation_result = validate_order_params(user, order_params)
     return validation_result unless validation_result[:success]
 
-    process_order_creation(user_result[:user], validation_result[:data])
+    process_order_creation(user, validation_result[:data])
   rescue StandardError => e
     { success: false, error: e.message }
   end
 
-  def self.index_orders(token)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
-    return { success: false, error: INVALID_TOKEN_ERROR } unless token_email
-
-    user = User.find_by(email: token_email)
+  def self.index_orders(user_id)
+    user = User.find_by(id: user_id)
     return { success: false, error: "User not found" } unless user
 
     orders = user.orders
@@ -48,12 +37,8 @@ class OrderService
     { success: true, orders: orders }
   end
 
-  def self.get_order_by_id(token, order_id)
-    token_full = JsonWebToken.decode(token)
-    token_email = token_full["email"]
-    return { success: false, error: INVALID_TOKEN_ERROR } unless token_email
-
-    user = User.find_by(email: token_email)
+  def self.get_order_by_id(user_id, order_id)
+    user = User.find_by(id: user_id)
     return { success: false, error: "User not found" } unless user
 
     order = user.orders.find_by(id: order_id)
@@ -64,17 +49,10 @@ class OrderService
 
   private
 
-  def self.validate_user(token_email)
-    return { success: false, error: "Invalid token: email not found" } unless token_email
-    user = User.find_by(email: token_email)
-    return { success: false, error: "User not found" } unless user
-    { success: true, user: user }
-  end
-
   def self.validate_order_for_update(user, order_id, status)
     order = user.orders.find_by(id: order_id)
     return { success: false, error: "Order not found" } unless order
-    return { success: false, error: "Only pending orders can be cancelled" } unless order.status == "pending"
+    return { success: false, error: "Only pending orders can be updated" } unless order.status == "pending"
     { success: true, order: order }
   end
 
@@ -88,6 +66,10 @@ class OrderService
       end
       { success: true, message: "Order status updated successfully", order: order }
     end
+  rescue ActiveRecord::RecordInvalid => e
+    { success: false, error: e.record.errors.full_messages.join(", ") }
+  rescue StandardError => e
+    { success: false, error: "An unexpected error occurred: #{e.message}" }
   end
 
   def self.validate_order_params(user, order_params)
@@ -114,7 +96,7 @@ class OrderService
 
   def self.process_order_creation(user, order_data)
     ActiveRecord::Base.transaction do
-      order = user.orders.create(
+      order = user.orders.create!(
         book_id: order_data[:book].id,
         address_id: order_data[:address].id,
         quantity: order_data[:quantity],
@@ -123,17 +105,17 @@ class OrderService
         total_price: order_data[:total_price]
       )
 
-      if order.persisted?
-        order_data[:book].update!(quantity: order_data[:book].quantity - order_data[:quantity])
-        begin
-          UserMailer.enqueue_order_confirmation_email(order)
-        rescue StandardError => e
-          Rails.logger.error "Failed to enqueue order confirmation email: #{e.message}"
-        end
-        { success: true, message: "Order placed successfully", order: order }
-      else
-        { success: false, error: order.errors.full_messages.join(", ") || "Failed to create order" }
+      order_data[:book].update!(quantity: order_data[:book].quantity - order_data[:quantity])
+      begin
+        UserMailer.enqueue_order_confirmation_email(order)
+      rescue StandardError => e
+        Rails.logger.error "Failed to enqueue order confirmation email: #{e.message}"
       end
+      { success: true, message: "Order placed successfully", order: order }
     end
+  rescue ActiveRecord::RecordInvalid => e
+    { success: false, error: e.record.errors.full_messages.join(", ") }
+  rescue StandardError => e
+    { success: false, error: "An unexpected error occurred: #{e.message}" }
   end
 end

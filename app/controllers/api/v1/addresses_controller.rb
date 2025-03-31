@@ -7,7 +7,7 @@ module Api
         result = AddressService.list_addresses(current_user)
         user_data = {
           name: current_user.name,
-          number: current_user.mobile_number  # Or phone, depending on your DB column
+          number: current_user.mobile_number 
         }
         render json: { user: user_data, addresses: result[:addresses] }, status: :ok
       end
