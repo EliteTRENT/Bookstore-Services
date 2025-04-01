@@ -43,6 +43,7 @@ Rails.application.routes.draw do
       patch "carts" => "carts#update_quantity"
 
       post "google_auth" => "google_auth#create"
+      post "github_auth" => "github_auth#create"
     end
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_28_051040) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_01_040035) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -90,6 +90,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_28_051040) do
     t.string "otp"
     t.datetime "otp_expires_at"
     t.string "role", default: "customer", null: false
+    t.string "github_id"
+    t.index ["github_id"], name: "index_users_on_github_id", unique: true
     t.index ["role"], name: "index_users_on_role"
   end
 
