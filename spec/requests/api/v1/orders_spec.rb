@@ -37,12 +37,6 @@ RSpec.describe OrderService, type: :service do
     )
   end
 
-  let(:valid_token) { "valid.jwt.token" }
-
-  before do
-    allow(JsonWebToken).to receive(:decode).with(valid_token).and_return({ "email" => user.email })
-  end
-
   describe ".create_order" do
     context "when the order is placed successfully" do
       let(:order_params) do
@@ -56,7 +50,7 @@ RSpec.describe OrderService, type: :service do
       end
 
       it "returns a success response and updates book quantity" do
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be true
         expect(response[:message]).to eq("Order placed successfully")
@@ -68,22 +62,20 @@ RSpec.describe OrderService, type: :service do
       end
     end
 
-    context "when token is invalid" do
+    context "when user is not found" do
       it "returns an error response" do
-        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
         order_params = { book_id: book.id, address_id: address.id, quantity: 2 }
-        response = OrderService.create_order("invalid.token", order_params)
+        response = OrderService.create_order(9999, order_params)
 
         expect(response[:success]).to be false
-        expect(response[:error]).to eq("Invalid token")
+        expect(response[:error]).to eq("User not found")
       end
     end
 
-    context "when user is not found" do
+    context "when user_id is nil" do
       it "returns an error response" do
-        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return({ "email" => "nonexistent@gmail.com" })
         order_params = { book_id: book.id, address_id: address.id, quantity: 2 }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(nil, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("User not found")
@@ -93,7 +85,7 @@ RSpec.describe OrderService, type: :service do
     context "when book is not found" do
       it "returns an error response" do
         order_params = { book_id: 9999, address_id: address.id, quantity: 2 }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Book with ID 9999 not found")
@@ -103,7 +95,7 @@ RSpec.describe OrderService, type: :service do
     context "when address is invalid" do
       it "returns an error response" do
         order_params = { book_id: book.id, address_id: 9999, quantity: 2 }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Invalid address")
@@ -113,7 +105,7 @@ RSpec.describe OrderService, type: :service do
     context "when quantity is zero or negative" do
       it "returns an error response for zero quantity" do
         order_params = { book_id: book.id, address_id: address.id, quantity: 0 }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Invalid quantity: must be greater than 0 and less than or equal to available stock (10)")
@@ -121,7 +113,7 @@ RSpec.describe OrderService, type: :service do
 
       it "returns an error response for negative quantity" do
         order_params = { book_id: book.id, address_id: address.id, quantity: -3 }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Invalid quantity: must be greater than 0 and less than or equal to available stock (10)")
@@ -131,7 +123,7 @@ RSpec.describe OrderService, type: :service do
     context "when quantity exceeds stock" do
       it "returns an error response" do
         order_params = { book_id: book.id, address_id: address.id, quantity: 15 }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Invalid quantity: must be greater than 0 and less than or equal to available stock (10)")
@@ -147,7 +139,7 @@ RSpec.describe OrderService, type: :service do
           price_at_purchase: book.discounted_price,
           total_price: 100.0 # Incorrect total price
         }
-        response = OrderService.create_order(valid_token, order_params)
+        response = OrderService.create_order(user.id, order_params)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Total price mismatch: expected 800.0, got 100.0")
@@ -180,7 +172,7 @@ RSpec.describe OrderService, type: :service do
       end
 
       it "returns a success response with all user orders" do
-        response = OrderService.index_orders(valid_token)
+        response = OrderService.index_orders(user.id)
 
         expect(response[:success]).to be true
         expect(response[:orders]).to be_present
@@ -191,24 +183,25 @@ RSpec.describe OrderService, type: :service do
 
     context "when user has no orders" do
       it "returns an error response" do
-        response = OrderService.index_orders(valid_token)
+        response = OrderService.index_orders(user.id)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("No orders found")
       end
     end
 
-    context "when token is invalid" do
-      it "raises a NoMethodError due to unhandled nil token" do
-        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
-        expect { OrderService.index_orders("invalid.token") }.to raise_error(NoMethodError, /undefined method `\[\]' for nil/)
+    context "when user is not found" do
+      it "returns an error response" do
+        response = OrderService.index_orders(9999)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("User not found")
       end
     end
 
-    context "when user is not found" do
+    context "when user_id is nil" do
       it "returns an error response" do
-        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return({ "email" => "nonexistent@gmail.com" })
-        response = OrderService.index_orders(valid_token)
+        response = OrderService.index_orders(nil)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("User not found")
@@ -230,7 +223,7 @@ RSpec.describe OrderService, type: :service do
 
     context "when order exists for the user" do
       it "returns a success response with the order" do
-        response = OrderService.get_order_by_id(valid_token, order.id)
+        response = OrderService.get_order_by_id(user.id, order.id)
 
         expect(response[:success]).to be true
         expect(response[:order]).to eq(order)
@@ -240,17 +233,18 @@ RSpec.describe OrderService, type: :service do
       end
     end
 
-    context "when token is invalid" do
-      it "raises a NoMethodError due to unhandled nil token" do
-        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
-        expect { OrderService.get_order_by_id("invalid.token", order.id) }.to raise_error(NoMethodError, /undefined method `\[\]' for nil/)
+    context "when user is not found" do
+      it "returns an error response" do
+        response = OrderService.get_order_by_id(9999, order.id)
+
+        expect(response[:success]).to be false
+        expect(response[:error]).to eq("User not found")
       end
     end
 
-    context "when user is not found" do
+    context "when user_id is nil" do
       it "returns an error response" do
-        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return({ "email" => "nonexistent@gmail.com" })
-        response = OrderService.get_order_by_id(valid_token, order.id)
+        response = OrderService.get_order_by_id(nil, order.id)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("User not found")
@@ -259,7 +253,7 @@ RSpec.describe OrderService, type: :service do
 
     context "when order is not found" do
       it "returns an error response" do
-        response = OrderService.get_order_by_id(valid_token, 9999)
+        response = OrderService.get_order_by_id(user.id, 9999)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Order not found")
@@ -287,7 +281,7 @@ RSpec.describe OrderService, type: :service do
       end
 
       it "returns an error response" do
-        response = OrderService.get_order_by_id(valid_token, other_order.id)
+        response = OrderService.get_order_by_id(user.id, other_order.id)
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Order not found")
@@ -309,7 +303,7 @@ RSpec.describe OrderService, type: :service do
 
     context "when the status update is successful" do
       it "updates to 'shipped' and returns a success response" do
-        response = OrderService.update_order_status(valid_token, order.id, "shipped")
+        response = OrderService.update_order_status(user.id, order.id, "shipped")
 
         expect(response[:success]).to be true
         expect(response[:message]).to eq("Order status updated successfully")
@@ -320,7 +314,7 @@ RSpec.describe OrderService, type: :service do
 
       it "updates to 'cancelled' and restores book quantity" do
         initial_quantity = book.quantity
-        response = OrderService.update_order_status(valid_token, order.id, "cancelled")
+        response = OrderService.update_order_status(user.id, order.id, "cancelled")
 
         expect(response[:success]).to be true
         expect(response[:message]).to eq("Order status updated successfully")
@@ -330,20 +324,18 @@ RSpec.describe OrderService, type: :service do
       end
     end
 
-    context "when token is invalid" do
-      it "returns an error response for unexpected error" do
-        allow(JsonWebToken).to receive(:decode).with("invalid.token").and_return(nil)
-        response = OrderService.update_order_status("invalid.token", order.id, "shipped")
+    context "when user is not found" do
+      it "returns an error response" do
+        response = OrderService.update_order_status(9999, order.id, "shipped")
 
         expect(response[:success]).to be false
-        expect(response[:error]).to eq("An unexpected error occurred: undefined method `[]' for nil")
+        expect(response[:error]).to eq("User not found")
       end
     end
 
-    context "when user is not found" do
+    context "when user_id is nil" do
       it "returns an error response" do
-        allow(JsonWebToken).to receive(:decode).with(valid_token).and_return({ "email" => "nonexistent@gmail.com" })
-        response = OrderService.update_order_status(valid_token, order.id, "shipped")
+        response = OrderService.update_order_status(nil, order.id, "shipped")
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("User not found")
@@ -352,7 +344,7 @@ RSpec.describe OrderService, type: :service do
 
     context "when order is not found" do
       it "returns an error response" do
-        response = OrderService.update_order_status(valid_token, 9999, "shipped")
+        response = OrderService.update_order_status(user.id, 9999, "shipped")
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Order not found")
@@ -380,7 +372,7 @@ RSpec.describe OrderService, type: :service do
       end
 
       it "returns an error response" do
-        response = OrderService.update_order_status(valid_token, other_order.id, "shipped")
+        response = OrderService.update_order_status(user.id, other_order.id, "shipped")
 
         expect(response[:success]).to be false
         expect(response[:error]).to eq("Order not found")
@@ -400,10 +392,10 @@ RSpec.describe OrderService, type: :service do
       end
 
       it "returns an error response" do
-        response = OrderService.update_order_status(valid_token, non_pending_order.id, "cancelled")
+        response = OrderService.update_order_status(user.id, non_pending_order.id, "cancelled")
 
         expect(response[:success]).to be false
-        expect(response[:error]).to eq("Only pending orders can be cancelled")
+        expect(response[:error]).to eq("Only pending orders can be updated")
       end
     end
   end

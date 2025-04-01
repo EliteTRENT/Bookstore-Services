@@ -94,3 +94,6 @@ group :test do
 end
 
 gem "httparty"
+group :test do
+  gem "webmock"
+end
