@@ -1,10 +1,30 @@
 # app/controllers/api/v1/users_controller.rb
 class Api::V1::UsersController < ApplicationController
   skip_before_action :authenticate_request
-  before_action :restrict_to_admin, only: :create
+  # before_action :restrict_to_admin, only: :create
 
   def create
-    result = UserService.create(user_params)
+    # Check if a token is provided and user is authenticated
+    token = request.headers["Authorization"]&.split(" ")&.last
+    if token
+      begin
+        decoded = JsonWebToken.decode(token)
+        @current_user = User.find_by(id: decoded["id"])
+      rescue JWT::DecodeError, ActiveRecord::RecordNotFound
+        @current_user = nil # Invalid token or user not found
+      end
+    end
+
+    # Handle user creation based on authentication and role
+    if @current_user && @current_user.role == "admin"
+      # Admin can create users with any role (customer or admin)
+      result = UserService.create(user_params)
+    else
+      # Public signup or non-admin: force role to "customer"
+      user_params_with_role = user_params.except(:role).merge(role: "customer")
+      result = UserService.create(user_params_with_role)
+    end
+
     if result[:success]
       render json: {
         message: result[:message],
@@ -85,7 +105,7 @@ class Api::V1::UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :mobile_number, :role) # Add role
+    params.require(:user).permit(:name, :email, :password, :mobile_number, :role)
   end
 
   def login_params
