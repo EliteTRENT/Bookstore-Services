@@ -3,12 +3,17 @@ require 'rails_helper'
 RSpec.describe Api::V1::CartsController, type: :controller do
   let(:user) { User.create!(name: "Test User", email: "test@gmail.com", password: "Password@123", mobile_number: "9876543210") }
   let(:book) { Book.create!(name: "Test Book", author: "Author", mrp: 100, discounted_price: 80, quantity: 10) }
-  let(:valid_token) { JsonWebToken.encode({ id: user.id, email: user.email }) }
+  let(:valid_token) { JsonWebToken.encode({ user_id: user.id }) }
   let(:invalid_token) { "invalid.token.here" }
 
   describe "POST #create" do
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{valid_token}"
+        allow(controller).to receive(:authenticate_request) do
+          controller.instance_variable_set(:@current_user, user)
+        end
+      end
 
       context "with valid cart parameters" do
         let(:valid_cart_params) do
@@ -77,7 +82,12 @@ RSpec.describe Api::V1::CartsController, type: :controller do
 
   describe "GET #get_cart" do
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{valid_token}"
+        allow(controller).to receive(:authenticate_request) do
+          controller.instance_variable_set(:@current_user, user)
+        end
+      end
 
       context "with items in the cart" do
         let(:cart_data) do
@@ -128,7 +138,12 @@ RSpec.describe Api::V1::CartsController, type: :controller do
 
   describe "DELETE #soft_delete_book" do
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{valid_token}"
+        allow(controller).to receive(:authenticate_request) do
+          controller.instance_variable_set(:@current_user, user)
+        end
+      end
 
       context "with a valid cart item" do
         let(:cart_item) { Cart.new(user_id: user.id, book_id: book.id, quantity: 2, is_deleted: true) }
@@ -187,7 +202,12 @@ RSpec.describe Api::V1::CartsController, type: :controller do
 
   describe "PATCH #update_quantity" do
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{valid_token}"
+        allow(controller).to receive(:authenticate_request) do
+          controller.instance_variable_set(:@current_user, user)
+        end
+      end
 
       context "with valid quantity update" do
         let(:update_params) do

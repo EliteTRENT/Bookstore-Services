@@ -4,7 +4,7 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
   let(:user) do
     User.create!(
       name: "Test User",
-      email: "test#{rand(1000)}@gmail.com", 
+      email: "test#{rand(1000)}@gmail.com",
       password: "Passw0rd!",
       mobile_number: "9876543210"
     )
@@ -21,7 +21,7 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
   end
 
   let(:valid_token) do
-    JsonWebToken.encode({ email: user.email }, 1.hour.from_now)
+    JsonWebToken.encode({ user_id: user.id }) # Adjusted to single argument with user_id
   end
 
   let(:invalid_token) { "invalid_token" }
@@ -35,15 +35,19 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
   end
 
   before do
+    # Stub token decoding for invalid token
     allow(JsonWebToken).to receive(:decode).with(invalid_token).and_return(nil)
+    # Stub token decoding for valid token to return expected payload
     allow(JsonWebToken).to receive(:decode).with(valid_token).and_return(
-      HashWithIndifferentAccess.new("email" => user.email, "exp" => 1.hour.from_now.to_i)
+      HashWithIndifferentAccess.new("user_id" => user.id)
     )
+    # Stub authenticate_request to set @current_user or render unauthorized
     allow_any_instance_of(ApplicationController).to receive(:authenticate_request) do |controller|
       if request.headers["Authorization"] == "Bearer #{valid_token}"
         controller.instance_variable_set(:@current_user, user)
       else
         controller.render json: { error: "Missing token" }, status: :unauthorized
+        nil # Ensure the action halts
       end
     end
   end
@@ -82,7 +86,7 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
         request.headers["Authorization"] = "Bearer #{valid_token}"
         post :create, params: { wishlist: { book_id: 999 } }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity) 
+        expect(response).to have_http_status(:unprocessable_entity)
         json_response = JSON.parse(response.body)
         expect(json_response["error"]).to eq("Book not found")
       end
@@ -163,7 +167,7 @@ RSpec.describe Api::V1::WishlistsController, type: :controller do
 
         expect(response).to have_http_status(:not_found)
         json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Wishlist item not found") 
+        expect(json_response["error"]).to eq("Wishlist item not found")
       end
     end
   end

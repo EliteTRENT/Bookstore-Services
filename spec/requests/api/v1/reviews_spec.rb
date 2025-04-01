@@ -5,6 +5,12 @@ RSpec.describe ReviewService, type: :service do
   let!(:user2) { User.create!(name: "Jane Doe", email: "jane.doe@gmail.com", password: "Password@123", mobile_number: "9876543211") }
   let!(:book) { Book.create!(name: "The Great Gatsby", author: "F. Scott Fitzgerald", mrp: 10.99, discounted_price: 9.99, quantity: 10) }
 
+  # Stub Redis interactions before all tests to avoid connection errors
+  before do
+    allow(REDIS).to receive(:del) # Stub REDIS.del to do nothing
+    allow(REDIS).to receive(:keys).and_return([]) # Stub REDIS.keys to return an empty array
+  end
+
   describe ".create" do
     context "with valid attributes" do
       let(:valid_attributes) do

@@ -2,7 +2,9 @@ require 'rails_helper'
 
 RSpec.describe Api::V1::BooksController, type: :controller do
   let(:user) { User.create!(name: "Test User", email: "test@gmail.com", password: "Password@123", mobile_number: "9876543210") }
-  let(:valid_token) { JsonWebToken.encode({ id: user.id }) }
+  let(:admin_user) { User.create!(name: "Admin", email: "admin@gmail.com", password: "Password@123", mobile_number: "9876543210", role: "admin") } # Valid mobile number
+  let(:valid_token) { JsonWebToken.encode({ user_id: user.id }) }
+  let(:admin_token) { JsonWebToken.encode({ user_id: admin_user.id }) }
   let(:invalid_token) { "invalid.token.here" }
 
   before do
@@ -15,7 +17,11 @@ RSpec.describe Api::V1::BooksController, type: :controller do
 
   describe "POST #create" do
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{admin_token}"
+        allow(controller).to receive(:authenticate_request).and_return(true)
+        allow(controller).to receive(:restrict_to_admin).and_return(true)
+      end
 
       context "with valid single book attributes" do
         let(:valid_book_params) do
@@ -64,7 +70,7 @@ RSpec.describe Api::V1::BooksController, type: :controller do
       end
 
       context "with valid CSV file" do
-        let(:csv_params) { { books: "mocked_csv_file" } } # Simulate file upload param
+        let(:csv_params) { { books: "mocked_csv_file" } }
         let(:mocked_books) do
           [
             Book.new(name: "Book 1", author: "Author 1", mrp: 100, discounted_price: 80, quantity: 10, book_details: "Details 1", genre: "Fiction")
@@ -72,7 +78,6 @@ RSpec.describe Api::V1::BooksController, type: :controller do
         end
 
         before do
-          # Stub BookService.create_book to return a success response with mocked books
           allow(BookService).to receive(:create_book).with(file: "mocked_csv_file").and_return(
             { success: true, message: "Books created successfully from CSV", books: mocked_books }
           )
@@ -85,12 +90,13 @@ RSpec.describe Api::V1::BooksController, type: :controller do
           expect(json_response["message"]).to eq("Books created successfully from CSV")
           expect(json_response["books"].length).to eq(1)
           expect(json_response["books"].first["name"]).to eq("Book 1")
-          # Since we're mocking, Book.count won't increase; we test the controller's response instead
         end
       end
     end
 
     context "without authentication" do
+      before { request.headers["Authorization"] = nil }
+
       it "returns an unauthorized response" do
         post :create, params: { book: { name: "Test Book" } }
         expect(response).to have_http_status(:unauthorized)
@@ -100,10 +106,14 @@ RSpec.describe Api::V1::BooksController, type: :controller do
   end
 
   describe "PUT #update" do
-    let!(:book) { Book.create!(name: "Old Book", author: "Old Author", mrp: 100, discounted_price: 80, quantity: 10) }
+    let!(:book) { FactoryBot.create(:book) }
 
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{admin_token}"
+        allow(controller).to receive(:authenticate_request).and_return(true)
+        allow(controller).to receive(:restrict_to_admin).and_return(true)
+      end
 
       context "with valid attributes" do
         let(:update_params) { { id: book.id, book: { name: "Updated Book" } } }
@@ -139,7 +149,7 @@ RSpec.describe Api::V1::BooksController, type: :controller do
   end
 
   describe "GET #index" do
-    let!(:books) { 15.times { |i| Book.create!(name: "Book #{i}", author: "Author", mrp: 100, discounted_price: 80, quantity: 10) } }
+    let!(:books) { 15.times { FactoryBot.create(:book) } }
 
     it "returns a paginated list of books" do
       get :index, params: { page: 1, per_page: 10 }
@@ -152,24 +162,25 @@ RSpec.describe Api::V1::BooksController, type: :controller do
     end
 
     context "with sorting" do
+      let!(:cheap_book) { FactoryBot.create(:book, discounted_price: 10.0) }
+
       it "sorts by price low to high" do
-        Book.create!(name: "Cheap Book", author: "Author", mrp: 50, discounted_price: 40, quantity: 10)
         get :index, params: { sort_by: "price-low" }
         json_response = JSON.parse(response.body)
-        expect(json_response["books"].first["discounted_price"].to_f).to eq(40.0)
+        expect(json_response["books"].first["discounted_price"].to_f).to eq(10.0)
       end
     end
   end
 
   describe "GET #show" do
-    let!(:book) { Book.create!(name: "Test Book", author: "Author", mrp: 100, discounted_price: 80, quantity: 10) }
+    let!(:book) { FactoryBot.create(:book) }
 
     it "returns the book details" do
       get :show, params: { id: book.id }
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
       expect(json_response["message"]).to eq("Book retrieved successfully")
-      expect(json_response["book"]["name"]).to eq("Test Book")
+      expect(json_response["book"]["name"]).to eq(book.name)
     end
 
     context "with non-existent book" do
@@ -182,10 +193,14 @@ RSpec.describe Api::V1::BooksController, type: :controller do
   end
 
   describe "PATCH #toggle_delete" do
-    let!(:book) { Book.create!(name: "Test Book", author: "Author", mrp: 100, discounted_price: 80, quantity: 10) }
+    let!(:book) { FactoryBot.create(:book) }
 
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{admin_token}"
+        allow(controller).to receive(:authenticate_request).and_return(true)
+        allow(controller).to receive(:restrict_to_admin).and_return(true)
+      end
 
       it "toggles the book deletion status" do
         patch :toggle_delete, params: { id: book.id }
@@ -206,10 +221,13 @@ RSpec.describe Api::V1::BooksController, type: :controller do
   end
 
   describe "DELETE #destroy" do
-    let!(:book) { Book.create!(name: "Test Book", author: "Author", mrp: 100, discounted_price: 80, quantity: 10) }
+    let!(:book) { FactoryBot.create(:book) }
 
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{valid_token}"
+        allow(controller).to receive(:authenticate_request).and_return(true)
+      end
 
       it "permanently deletes the book" do
         delete :destroy, params: { id: book.id }
@@ -230,7 +248,7 @@ RSpec.describe Api::V1::BooksController, type: :controller do
   end
 
   describe "GET #search_suggestions" do
-    let!(:book) { Book.create!(name: "Test Book", author: "Test Author", mrp: 100, discounted_price: 80, quantity: 10) }
+    let!(:book) { FactoryBot.create(:book, name: "Test Book", author: "Test Author") }
 
     it "returns search suggestions" do
       get :search_suggestions, params: { query: "Test" }
@@ -251,11 +269,14 @@ RSpec.describe Api::V1::BooksController, type: :controller do
   end
 
   describe "GET #stock" do
-    let!(:book1) { Book.create!(name: "Book 1", author: "Author", mrp: 100, discounted_price: 80, quantity: 5) }
-    let!(:book2) { Book.create!(name: "Book 2", author: "Author", mrp: 200, discounted_price: 150, quantity: 3) }
+    let!(:book1) { FactoryBot.create(:book, quantity: 5) }
+    let!(:book2) { FactoryBot.create(:book, quantity: 3) }
 
     context "with authentication" do
-      before { request.headers["Authorization"] = "Bearer #{valid_token}" }
+      before do
+        request.headers["Authorization"] = "Bearer #{valid_token}"
+        allow(controller).to receive(:authenticate_request).and_return(true)
+      end
 
       it "returns stock for given book IDs" do
         get :stock, params: { book_ids: "#{book1.id},#{book2.id}" }

@@ -112,7 +112,7 @@ RSpec.describe Api::V1::GoogleAuthController, type: :controller do
         post :create, params: { token: invalid_google_token }
         expect(response).to have_http_status(:unauthorized)
         json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Invalid token")
+        expect(json_response["error"]).to eq("Invalid Google token")
         expect(json_response["details"]).to eq("Token expired")
       end
     end
