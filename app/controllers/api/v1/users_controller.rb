@@ -1,26 +1,36 @@
-# app/controllers/api/v1/users_controller.rb
 class Api::V1::UsersController < ApplicationController
   skip_before_action :authenticate_request
-  # before_action :restrict_to_admin, only: :create
 
   def create
-    # Check if a token is provided and user is authenticated
+    # Extract and log the token
     token = request.headers["Authorization"]&.split(" ")&.last
+    Rails.logger.info "Received token: #{token}"
+
+    # Attempt to decode token and set current user
     if token
       begin
         decoded = JsonWebToken.decode(token)
-        @current_user = User.find_by(id: decoded["id"])
-      rescue JWT::DecodeError, ActiveRecord::RecordNotFound
-        @current_user = nil # Invalid token or user not found
+        Rails.logger.info "Decoded token: #{decoded.inspect}"
+        # Use "user_id" to match the payload from login
+        @current_user = User.find_by(id: decoded["user_id"])
+        Rails.logger.info "Current user: #{@current_user&.inspect}"
+      rescue JWT::DecodeError => e
+        Rails.logger.error "Token decode error: #{e.message}"
+        @current_user = nil
+      rescue ActiveRecord::RecordNotFound
+        Rails.logger.error "User not found for decoded token"
+        @current_user = nil
       end
+    else
+      Rails.logger.info "No token provided"
     end
 
     # Handle user creation based on authentication and role
     if @current_user && @current_user.role == "admin"
-      # Admin can create users with any role (customer or admin)
-      result = UserService.create(user_params)
+      Rails.logger.info "Admin detected, creating user with params: #{user_params.inspect}"
+      result = UserService.create(user_params) # Admin can set any role
     else
-      # Public signup or non-admin: force role to "customer"
+      Rails.logger.info "Non-admin or unauthenticated, forcing role to customer"
       user_params_with_role = user_params.except(:role).merge(role: "customer")
       result = UserService.create(user_params_with_role)
     end
@@ -28,7 +38,7 @@ class Api::V1::UsersController < ApplicationController
     if result[:success]
       render json: {
         message: result[:message],
-        user: result[:user].slice(:id, :name, :email, :mobile_number, :role) # Include role
+        user: result[:user].slice(:id, :name, :email, :mobile_number, :role)
       }, status: :created
     else
       render json: { errors: result[:error] }, status: :unprocessable_entity
