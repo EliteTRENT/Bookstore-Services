@@ -7,7 +7,7 @@ class Api::V1::GithubAuthController < ApplicationController
 
   def create
     user = authenticate_with_github(github_params[:code])
-    return unless user # Exit early if user is nil, relying on render_error to have rendered
+    return unless user 
 
     token = JsonWebToken.encode({ id: user.id, name: user.name, email: user.email })
     refresh_token = JsonWebToken.encode_refresh({ user_id: user.id }, expiration: 30.days.from_now)
