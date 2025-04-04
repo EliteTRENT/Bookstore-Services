@@ -4,13 +4,33 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
-  <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
+  primary:
+    <<: *default
+    database: <%= ENV["POSTGRESQL_DATABASE_DEVELOPMENT"] %>
+    username: postgres
+    password: <%= ENV["POSTGRESQL_PASSWORD"] %>
+    host: localhost
+    port: 5432
 
 test:
-  <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
+  primary:
+    <<: *default
+    database: <%= ENV["POSTGRESQL_DATABASE_TEST"] %>
+    username: postgres
+    password: <%= ENV["POSTGRESQL_PASSWORD"] %>
+    host: localhost
+    port: 5432
 
 production:
-  <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
+  primary:
+    <<: *default
+    url: <%= ENV["PRODUCTION_DATABASE_URL"] %>
+  cable:
+    <<: *default
+    url: <%= ENV["PRODUCTION_DATABASE_URL"] %>
+  queue:
+    <<: *default
+    url: <%= ENV["PRODUCTION_DATABASE_URL"] %>
+  cache:
+    <<: *default
+    url: <%= ENV["PRODUCTION_DATABASE_URL"] %>
