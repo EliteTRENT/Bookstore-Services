@@ -1,14 +1,14 @@
-require 'bunny'
+require "bunny"
 
 class OtpWorker
   def self.start
     puts "Starting OTP email worker..."
 
     conn = Bunny.new(
-      host: ENV['RABBITMQ_HOST'] || 'localhost',
-      port: ENV['RABBITMQ_PORT'] || 5672,
-      username: ENV['RABBITMQ_USERNAME'] || 'guest',
-      password: ENV['RABBITMQ_PASSWORD'] || 'guest'
+      host: ENV["RABBITMQ_HOST"],
+      port: ENV["RABBITMQ_PORT"],
+      username: ENV["RABBITMQ_USERNAME"],
+      password: ENV["RABBITMQ_PASSWORD"]
     )
     conn.start
 
@@ -21,8 +21,8 @@ class OtpWorker
       begin
         puts "Received message: #{body}"
         data = JSON.parse(body)
-        email = data['email'] # Use email instead of user_id
-        otp = data['otp']
+        email = data["email"] # Use email instead of user_id
+        otp = data["otp"]
 
         raise "Missing or invalid email: #{email.inspect}" unless email.present?
 
