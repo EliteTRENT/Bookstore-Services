@@ -1,4 +1,5 @@
 require "bunny"
+
 class OrderConfirmationWorker
   def self.start
     loop do
@@ -32,9 +33,9 @@ class OrderConfirmationWorker
       ensure
         RabbitMQ.close_connection # Clean up connection on error or loop iteration
       end
+    rescue Interrupt => _
+      puts " [x] Shutting down OrderConfirmationWorker..."
+      RabbitMQ.close_connection
     end
-  rescue Interrupt => _
-    puts " [x] Shutting down OrderConfirmationWorker..."
-    RabbitMQ.close_connection
   end
 end
