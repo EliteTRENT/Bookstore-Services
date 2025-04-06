@@ -1,4 +1,5 @@
 require "bunny"
+
 class WelcomeEmailWorker
   def self.start
     loop do
@@ -31,9 +32,9 @@ class WelcomeEmailWorker
       ensure
         RabbitMQ.close_connection # Clean up connection on error or loop iteration
       end
+    rescue Interrupt => _
+      puts " [x] Shutting down WelcomeEmailWorker..."
+      RabbitMQ.close_connection
     end
-  rescue Interrupt => _
-    puts " [x] Shutting down WelcomeEmailWorker..."
-    RabbitMQ.close_connection
   end
 end
