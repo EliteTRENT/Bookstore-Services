@@ -3,13 +3,13 @@ require "bunny"
 module RabbitMQ
   def self.create_channel
     @connection ||= Bunny.new(
-      host: ENV["RABBITMQ_HOST"],
-      port: ENV["RABBITMQ_PORT"],
-      username: ENV["RABBITMQ_USERNAME"],
-      password: ENV["RABBITMQ_PASSWORD"]
+      ENV["RABBITMQ_URL"] || "amqp://guest:guest@localhost:5672"
     ).tap(&:start)
     @connection.create_channel
   end
 
-  at_exit { @connection&.close }
+  def self.close_connection
+    @connection&.close if @connection
+  end
+  at_exit { close_connection }
 end
