@@ -4,7 +4,8 @@ require "json" # Ensure JSON is required for parsing
 
 class OrderConfirmationWorker
   def self.start
-    channel = ::CHANNEL # Use the global CHANNEL from rabbitmq.rb
+    channel = RabbitMQ.channel
+    return unless channel
     queue = channel.queue("order_confirmations")
 
     puts " [*] Waiting for messages in order_confirmations queue. To exit, press CTRL+C"

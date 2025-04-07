@@ -5,20 +5,23 @@ class UserMailer < ApplicationMailer
   default from: "aryannegi522@gmail.com"
 
   def self.enqueue_otp_email(user, otp)
-    channel = ::CHANNEL # Explicitly reference the global CHANNEL
+    channel = RabbitMQ.channel
+    return unless channel
     queue = channel.queue("otp_emails")
     queue.publish({ email: user.email, otp: otp }.to_json)
   end
 
   def self.enqueue_welcome_email(user)
-    channel = ::CHANNEL
+    channel = RabbitMQ.channel
+    return unless channel
     queue = channel.queue("welcome_emails")
     message = { email: user.email, user_name: user.name }.to_json
     queue.publish(message, persistent: true)
   end
 
   def self.enqueue_order_confirmation_email(order)
-    channel = ::CHANNEL
+    channel = RabbitMQ.channel
+    return unless channel
     queue = channel.queue("order_confirmations")
     book = order.book
     Rails.logger.info " [x] Book details: #{book.attributes.inspect}"
