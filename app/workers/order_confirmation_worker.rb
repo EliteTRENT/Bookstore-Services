@@ -1,41 +1,27 @@
+# app/workers/order_confirmation_worker.rb
 require "bunny"
+require "json" # Ensure JSON is required for parsing
 
 class OrderConfirmationWorker
   def self.start
-    loop do
-      begin
-        puts " [*] Connecting to RabbitMQ and waiting for messages in 'order_confirmations' queue..."
-        channel = RabbitMQ.create_channel
-        queue = channel.queue("order_confirmations")
+    channel = ::CHANNEL # Use the global CHANNEL from rabbitmq.rb
+    queue = channel.queue("order_confirmations")
 
-        puts " [*] Waiting for messages in 'order_confirmations' queue. To exit manually, stop the service."
+    puts " [*] Waiting for messages in order_confirmations queue. To exit, press CTRL+C"
 
-        queue.subscribe(block: true) do |delivery_info, properties, body|
-          message = JSON.parse(body)
-          user = User.find_by(email: message["email"])
-          order = Order.find_by(id: message["order_id"])
-          if user && order
-            UserMailer.order_confirmation_email(order).deliver_now
-            puts " [x] Sent order confirmation email to #{user.email} for Order ##{order.id}"
-          else
-            puts " [x] Failed to send order confirmation email: User or Order not found for email #{message['email']} and order_id #{message['order_id']}"
-          end
-        end
-      rescue Bunny::TCPConnectionFailed => e
-        puts " [x] RabbitMQ connection failed: #{e.message}. Retrying in 5 seconds..."
-        sleep 5
-      rescue JSON::ParserError => e
-        puts " [x] Failed to parse message: #{e.message}. Retrying in 5 seconds..."
-        sleep 5
-      rescue StandardError => e
-        puts " [x] Error processing message: #{e.message}. Retrying in 5 seconds..."
-        sleep 5
-      ensure
-        RabbitMQ.close_connection # Clean up connection on error or loop iteration
+    queue.subscribe(block: true) do |_, _, body|
+      message = JSON.parse(body)
+      user = User.find_by(email: message["email"])
+      order = Order.find_by(id: message["order_id"])
+      if user && order
+        UserMailer.order_confirmation_email(order).deliver_now
+        puts " [x] Sent order confirmation email to #{user.email} for Order ##{order.id}"
+      else
+        puts " [x] Failed to send order confirmation email: User or Order not found for email #{message["email"]} and order_id #{message["order_id"]}"
       end
-    rescue Interrupt => _
-      puts " [x] Shutting down OrderConfirmationWorker..."
-      RabbitMQ.close_connection
     end
+  rescue Interrupt => _
+    channel.close
+    puts " [x] Worker interrupted and channel closed"
   end
 end
