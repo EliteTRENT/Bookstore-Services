@@ -3,88 +3,78 @@ require "active_support/core_ext/integer/time"
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
-  # Code is not reloaded between requests.
+  # Code is not reloaded between requests in production.
   config.enable_reloading = false
 
-  # Eager load code on boot for better performance and memory savings (ignored by Rake tasks).
+  # Eager load code on boot to improve performance and catch errors early.
   config.eager_load = true
 
-  # Full error reports are disabled.
+  # Do not show full error reports to users; use a generic error page instead.
   config.consider_all_requests_local = false
 
-  # Turn on fragment caching in view templates.
+  # Enable server timing for performance monitoring (optional, keep if you use it).
+  config.server_timing = true
+
+  # Enable caching for better performance.
   config.action_controller.perform_caching = true
+  config.action_controller.enable_fragment_cache_logging = true # Optional, for debugging
+  config.public_file_server.headers = { "Cache-Control" => "public, max-age=#{1.year.to_i}" } # Long cache for static assets
 
-  # Cache assets for far-future expiry since they are all digest stamped.
-  config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
+  # Use a real caching store (e.g., Memcached or Redis) instead of memory_store.
+  # Render supports Redis; uncomment and configure if you add it.
+  # config.cache_store = :redis_cache_store, { url: ENV["REDIS_URL"] }
+  config.cache_store = :memory_store # Temporary, switch to Redis for production scale
 
-  # Enable serving of images, stylesheets, and JavaScripts from an asset server.
-  # config.asset_host = "http://assets.example.com"
+  # Store uploaded files (e.g., Active Storage). Use Render’s disk or an external service like S3.
+  config.active_storage.service = :local # Change to :amazon or :render_disk if configured
 
-  # Store uploaded files on the local file system (see config/storage.yml for options).
-  config.active_storage.service = :local
+  # **EMAIL CONFIGURATION**
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = false # Don’t raise errors in production; log them instead
+  config.action_mailer.smtp_settings = {
+    address: "smtp.gmail.com",
+    port: 587,
+    domain: "gmail.com",
+    user_name: ENV["EMAIL_USERNAME"], # Set in Render’s environment variables
+    password: ENV["EMAIL_PASSWORD"],  # Use Gmail App Password, set in Render
+    authentication: "plain",
+    enable_starttls_auto: true,
+    open_timeout: 10,
+    read_timeout: 10
+  }
+  # Set the production host for email URLs (Render provides this).
+  config.action_mailer.default_url_options = { host: ENV["RENDER_EXTERNAL_HOSTNAME"] || "your-app-name.onrender.com" }
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
+  # Log deprecation notices to the Rails logger.
+  config.active_support.deprecation = :log
 
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
+  # Don’t check for pending migrations on page load in production; handle during deploy.
+  config.active_record.migration_error = false
+
+  # Log database queries with runtime info (optional, disable if logs get too noisy).
+  config.active_record.verbose_query_logs = false
+  config.active_record.query_log_tags_enabled = true
+
+  # Log background job enqueuing (optional).
+  config.active_job.verbose_enqueue_logs = true
+
+  # Raise error for missing translations (optional, enable if needed).
+  # config.i18n.raise_on_missing_translations = true
+
+  # Annotate views with filenames (optional, disable in production unless debugging).
+  config.action_view.annotate_rendered_view_with_filenames = false
+
+  # Ensure SSL is enforced (Render handles this, but good to set).
   config.force_ssl = true
 
-  # Skip http-to-https redirect for the default health check endpoint.
-  # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+  # Configure logging level (adjust based on needs).
+  config.log_level = :info # :debug for more detail, :info for less noise
 
-  # Log to STDOUT with the current request id as a default log tag.
-  config.log_tags = [ :request_id ]
-  config.logger   = ActiveSupport::TaggedLogging.logger(STDOUT)
+  # Use a more robust logger for production.
+  config.logger = ActiveSupport::Logger.new(STDOUT)
+  config.log_formatter = ::Logger::Formatter.new
 
-  # Change to "debug" to log everything (including potentially personally-identifiable information!)
-  config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
-
-  # Prevent health checks from clogging up the logs.
-  config.silence_healthcheck_path = "/up"
-
-  # Don't log any deprecations.
-  config.active_support.report_deprecations = false
-
-  # Replace the default in-process memory cache store with a durable alternative.
-  config.cache_store = :solid_cache_store
-
-  # Replace the default in-process and non-durable queuing backend for Active Job.
-  config.active_job.queue_adapter = :solid_queue
-  config.solid_queue.connects_to = { database: { writing: :queue } }
-
-  # Ignore bad email addresses and do not raise email delivery errors.
-  # Set this to true and configure the email server for immediate delivery to raise delivery errors.
-  # config.action_mailer.raise_delivery_errors = false
-
-  # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
-
-  # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
-  # config.action_mailer.smtp_settings = {
-  #   user_name: Rails.application.credentials.dig(:smtp, :user_name),
-  #   password: Rails.application.credentials.dig(:smtp, :password),
-  #   address: "smtp.example.com",
-  #   port: 587,
-  #   authentication: :plain
-  # }
-
-  # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
-  # the I18n.default_locale when a translation cannot be found).
-  config.i18n.fallbacks = true
-
-  # Do not dump schema after migrations.
-  config.active_record.dump_schema_after_migration = false
-
-  # Only use :id for inspections in production.
-  config.active_record.attributes_for_inspect = [ :id ]
-
-  # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
-  #
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # Raise error for missing callback actions.
+  config.action_controller.raise_on_missing_callback_actions = true
 end
