@@ -6,7 +6,7 @@ class JsonWebToken
   REFRESH_SECRET_KEY = ENV["REFRESH_SECRET_KEY"] || "your-refresh-secret-key-here" # Separate key for refresh tokens
 
   # Encode an access token (short-lived, e.g., 15 minutes)
-  def self.encode(payload, expiration: 1.minute.from_now)
+  def self.encode(payload, expiration: 15.minutes.from_now)
     payload[:exp] = expiration.to_i
     Rails.logger.info "Encoding JWT access token with payload: #{payload.inspect}"
     token = JWT.encode(payload, SECRET_KEY, "HS256")
