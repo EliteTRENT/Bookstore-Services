@@ -1,25 +1,20 @@
+# config/initializers/rabbitmq.rb
 require "bunny"
 
-module RabbitMQ
-  def self.create_channel
-    if ENV["RABBITMQ_URL"] && !ENV["RABBITMQ_URL"].empty?
-      @connection ||= Bunny.new(ENV["RABBITMQ_URL"]).tap(&:start)
-    elsif ENV["RABBITMQ_HOST"] && ENV["RABBITMQ_PORT"] && ENV["RABBITMQ_USERNAME"] && ENV["RABBITMQ_PASSWORD"]
-      @connection ||= Bunny.new(
-        host: ENV["RABBITMQ_HOST"],
-        port: ENV["RABBITMQ_PORT"].to_i,
-        username: ENV["RABBITMQ_USERNAME"],
-        password: ENV["RABBITMQ_PASSWORD"]
-      ).tap(&:start)
-    else
-      raise "Neither RABBITMQ_URL nor required RABBITMQ_* variables (HOST, PORT, USERNAME, PASSWORD) are properly set."
-    end
-    @connection.create_channel
-  end
-
-  def self.close_connection
-    @connection&.close if @connection
-  end
-
-  at_exit { close_connection }
+begin
+  Rails.logger.info "Starting RabbitMQ connection setup"
+  conn = Bunny.new(
+    host: ENV["RABBITMQ_HOST"] || "beaver.rmq.cloudamqp.com",
+    port: ENV["RABBITMQ_PORT"]&.to_i || 5671,
+    username: ENV["RABBITMQ_USERNAME"] || "wcuvhlex",
+    password: ENV["RABBITMQ_PASSWORD"] || "9jNTYYHBaaAF-16MeIE9gT5OW0q3zbuW",
+    vhost: ENV["RABBITMQ_VHOST"] || "wcuvhlex",
+    ssl: true
+  )
+  conn.start
+  CHANNEL = conn.create_channel
+  Rails.logger.info "RabbitMQ connection established and CHANNEL created: #{CHANNEL.inspect}"
+rescue Bunny::Exception => e
+  Rails.logger.error "Failed to connect to RabbitMQ: #{e.message}"
+  raise e # Raise to halt the app and make the failure obvious
 end

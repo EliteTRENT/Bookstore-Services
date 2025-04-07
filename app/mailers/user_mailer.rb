@@ -1,27 +1,27 @@
+# app/mailers/user_mailer.rb
+require 'json'
+
 class UserMailer < ApplicationMailer
   default from: "aryannegi522@gmail.com"
 
   def self.enqueue_otp_email(user, otp)
-    channel = RabbitMQ.create_channel
+    channel = ::CHANNEL # Explicitly reference the global CHANNEL
     queue = channel.queue("otp_emails")
-    message = { email: user.email, otp: otp }.to_json
-    queue.publish(message, persistent: true)
-    channel.close # Close channel after publishing
+    queue.publish({ email: user.email, otp: otp }.to_json)
   end
 
   def self.enqueue_welcome_email(user)
-    channel = RabbitMQ.create_channel
-    queue = channel.queue("welcome_emails") # New queue for welcome emails
+    channel = ::CHANNEL
+    queue = channel.queue("welcome_emails")
     message = { email: user.email, user_name: user.name }.to_json
     queue.publish(message, persistent: true)
-    channel.close
   end
 
   def self.enqueue_order_confirmation_email(order)
-    channel = RabbitMQ.create_channel
+    channel = ::CHANNEL
     queue = channel.queue("order_confirmations")
     book = order.book
-    Rails.logger.info " [x] Book details: #{book.attributes.inspect}" # Log book attributes for debugging
+    Rails.logger.info " [x] Book details: #{book.attributes.inspect}"
     message = {
       email: order.user.email,
       order_id: order.id,
@@ -32,7 +32,6 @@ class UserMailer < ApplicationMailer
     Rails.logger.info " [x] Publishing order confirmation message: #{message}"
     queue.publish(message, persistent: true)
     Rails.logger.info " [x] Successfully published to order_confirmations queue"
-    channel.close
   rescue StandardError => e
     Rails.logger.error " [x] Failed to publish to order_confirmations queue: #{e.message}"
     raise e
@@ -41,7 +40,7 @@ class UserMailer < ApplicationMailer
   def otp_email(user, otp)
     @user = user
     @otp = otp
-    mail(to: @user.email, subject: "Your OTP for Password Reset - Book Store")
+    mail(to: user.email, subject: "Your OTP for Password Reset - Book Store")
   end
 
   def password_reset_success_email(user)
