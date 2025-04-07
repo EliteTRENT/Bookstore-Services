@@ -4,7 +4,8 @@ require "json" # Ensure JSON is required for parsing
 
 class EmailWorker
   def self.start
-    channel = CHANNEL # Use the global CHANNEL from rabbitmq.rb
+    channel = RabbitMQ.channel
+    return unless channel
     queue = channel.queue("otp_emails")
 
     puts " [*] Waiting for messages in otp_emails queue. To exit, press CTRL+C"
