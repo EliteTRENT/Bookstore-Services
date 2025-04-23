@@ -89,8 +89,8 @@ GEM
     brakeman (7.0.0)
       racc
     builder (3.3.0)
-    bunny (2.23.0)
-      amq-protocol (~> 2.3, >= 2.3.1)
+    bunny (2.24.0)
+      amq-protocol (~> 2.3)
       sorted_set (~> 1, >= 1.0.2)
     capybara (3.40.0)
       addressable
